@@ -33,7 +33,13 @@
 (use-package use-package-hydra)
 (use-package diminish)
 
-(use-package bind-key)
+(define-prefix-command 'port-project-map)
+
+(use-package bind-key
+  :config
+  (bind-key "<insert>" #'port-project-map))
+
+(use-package key-chord)
 
 (load (concat user-emacs-directory "lib.el"))
 
@@ -111,6 +117,7 @@
 (use-package f)               ;; File manipulation
 (use-package async)
 (use-package mode-local)
+(use-package ffap)
 (use-package hydra)
 (use-package restart-emacs)
 
@@ -147,12 +154,17 @@
   (kept-old-versions 0)
   :config
   ;; Revert buffers to reflect external file changes
-  (global-auto-revert-mode t))
+  (global-auto-revert-mode t)
+  (defun find-file-maybe-make-directories ()
+    (let ((dir (file-name-directory buffer-file-name)))
+      (unless (file-exists-p dir)
+        (make-directory dir t))))
+  (push #'find-file-maybe-make-directories find-file-not-found-functions))
 
 (use-package savehist
   :custom
   (savehist-additional-variables
-   '(search-ring regexp-search-ring))
+   '(search-ring regexp-search-ring comint-input-ring))
   :config
   (savehist-mode))
 
@@ -168,14 +180,26 @@
   (advice-add 'recentf-cleanup :around #'inhibit-message-in-minibuffer))
 
 (use-feature simple
+  :custom
+  (set-mark-command-repeat-pop t)
+  (save-interprogram-paste-before-kill t)
+  (async-shell-command-buffer 'new-buffer)
   :config
   (column-number-mode)
+  (defun kill-or-join-line (f &rest args)
+    (if (not (eolp))
+        (apply f args)
+      (delete-indentation 1)
+      (when (and (eolp) (not (eq (point) (point-max))))
+        (kill-or-join-line f args))))
   (defun move-beginning-of-line-or-indentation (f &rest args)
     (let ((orig-point (point)))
       (back-to-indentation)
       (when (= orig-point (point))
         (apply f args))))
   (advice-add 'backward-kill-word :around #'delete-region-instead-of-kill-region)
+  (advice-add 'kill-line :around #'kill-or-join-line)
+  (advice-add 'kill-visual-line :around #'kill-or-join-line)
   (advice-add 'move-beginning-of-line :around #'move-beginning-of-line-or-indentation)
   (advice-add 'beginning-of-visual-line :around #'move-beginning-of-line-or-indentation))
 
@@ -218,6 +242,86 @@
   :bind
   ("S-N" . scratch))
 
+(use-feature comint
+  :bind
+  (:map comint-mode-map
+        ("RET" . comint-return-dwim)
+        ("C-r" . comint-history-isearch-backward-regexp))
+  :custom
+  (comint-prompt-read-only t)
+  :config
+  (setq-default comint-input-ignoredups t
+                comint-scroll-show-maximum-output nil
+                comint-output-filter-functions
+                '(ansi-color-process-output
+                  comint-truncate-buffer
+                  comint-watch-for-password-prompt))
+  (defun turn-on-comint-history (history-file)
+    (setq-comint-input-ring-file-name history-file)
+    (comint-read-input-ring 'silent))
+  (def comint-return-dwim
+    (cond
+     ((comint-after-pmark-p)
+      (comint-send-input))
+     ((ffap-url-at-point)
+      (browse-url (ffap-url-at-point)))
+     ((ffap-file-at-point)
+      (find-file (ffap-file-at-point)))
+     (t (comint-next-prompt 1))))
+  (defun write-input-ring-for-shell-modes ()
+    (when (-any? #'derived-mode-p '(comint-mode term-mode))
+      (comint-write-input-ring)))
+  (defun write-input-ring-for-all-shell-modes ()
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer (write-input-ring-for-shell-modes))))
+  (add-hook 'kill-buffer-hook #'write-input-ring-for-shell-modes)
+  (add-hook 'kill-emacs-hook #'write-input-ring-for-all-shell-modes))
+
+(use-feature compile
+  :custom
+  (compilation-always-kill t)
+  (compilation-read-commmand nil)             ; Disable confirmation of compile command
+  (compilation-ask-about-save nil)
+  :init
+  (add-hook 'compilation-finish-function #'alert-after-finish-in-background))
+
+(use-package ansi-color
+  :hook
+  (compilation-filter . colorize-compilation-buffer)
+  :config
+  (defun colorize-compilation-buffer ()
+    (when (eq major-mode 'compilation-mode)
+      (ansi-color-apply-on-region compilation-filter-start (point-max)))))
+
+(use-package shell
+  :custom
+  (explicit-shell-file-name (getenv "SHELL"))
+  :config
+  (defun make-shell-command-behave-interactively (f &rest args)
+    (let ((shell-command-switch "-ic"))
+      (apply f args)))
+  (advice-add 'shell-command :around #'make-shell-command-behave-interactively)
+  (advice-add 'start-process-shell-command :around #'make-shell-command-behave-interactively)
+  (add-λ 'shell-mode-hook
+    (turn-on-comint-history (getenv "HISTFILE"))))
+
+(use-package term
+  :bind
+  (:map term-raw-mapp
+        ([remap term-send-input] . term-return-dwim))
+  :custom
+  (term-input-ring-file-name (getenv "HISTFILE"))
+  :config
+  (def term-return-dwim
+    (cond
+     ((term-after-pmark-p)
+      (term-send-input))
+     ((ffap-url-at-point)
+      (browse-url (ffap-url-at-point)))
+     ((ffap-file-at-point)
+      (find-file (ffap-file-at-point)))
+     (t (term-next-prompt 1)))))
+
 ;; Load packages
 (mapc (apply-partially 'add-to-list 'load-path)
       '("~/.emacs.d/port-modules/"))
@@ -236,8 +340,8 @@
 (require 'port-language-server)
 (require 'port-flycheck)
 ;; (require 'port-snippets)
-;; (require 'port-other)
-;; (require 'port-shell)
+(require 'port-other)
+(require 'port-shell)
 ;; (require 'port-cplusplus)
 ;; (require 'port-csharp)
 ;; (require 'port-golang)

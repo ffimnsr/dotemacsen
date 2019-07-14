@@ -7,6 +7,9 @@
         mac-function-modifer 'control)
   (global-set-key "\M-`" 'other-frame))
 
+(use-package terminal-here
+  :if is-macos)
+
 (use-package reveal-in-osx-finder
   :if is-macos)
 

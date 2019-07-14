@@ -25,7 +25,8 @@
 
 (use-package counsel-projectile
   :after projectile
-  :config (counsel-projectile-mode)
+  :config
+  (counsel-projectile-mode)
   :bind
   ("M-t" . counsel-projectile-find-file))
 

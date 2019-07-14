@@ -6,7 +6,7 @@
   (ivy-extra-directories nil)
   (ivy-re-builders-alist
    '((swiper . ivy--regex-plus)
-     (counsel-ag . ivy--regex-plus)
+     (counsel-rg . ivy--regex-plus)
      (t . ivy--regex-fuzzy)))
   (ivy-use-virtual-buffers t)
   (ivy-virtual-abbreviate 'abbreviate)
@@ -52,6 +52,15 @@
   (when (memq window-system '(mac ns))
     (exec-path-from-shell-initialize)))
 
+(use-package direnv
+  :ensure-system-package direnv
+  :custom
+  (direnv-always-show-summary nil)
+  :init
+  (direnv-mode)
+  (add-to-list 'direnv-non-file-modes 'comint-mode)
+  (add-to-list 'direnv-non-file-modes 'shell-mode))
+
 (use-package expand-region
   :bind
   ("C-=" . er/expand-region)
@@ -86,12 +95,17 @@
   :config
   (show-paren-mode))
 
-(use-package smartparens
-  :diminish smartparens-mode
-  :config
-  (progn
-    (require 'smartparens-config)
-    (smartparens-global-mode 1)))
+(use-package elec-pair
+  :init (electric-pair-mode))
+
+(use-package electric
+  :custom
+  (electric-quote-string t)
+  (electric-quote-context-sensitive t))
+
+(use-package bash-completion
+  :init
+  (bash-completion-setup))
 
 (use-package editorconfig
   :diminish editorconfig-mode
