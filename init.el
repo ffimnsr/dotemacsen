@@ -238,9 +238,7 @@
   :diminish delete-selection-mode
   :init (delete-selection-mode))
 
-(use-package scratch
-  :bind
-  ("S-N" . scratch))
+(use-package scratch)
 
 (use-feature comint
   :bind
@@ -257,7 +255,7 @@
                   comint-truncate-buffer
                   comint-watch-for-password-prompt))
   (defun turn-on-comint-history (history-file)
-    (setq-comint-input-ring-file-name history-file)
+    (setq comint-input-ring-file-name history-file)
     (comint-read-input-ring 'silent))
   (def comint-return-dwim
     (cond
@@ -339,7 +337,7 @@
 (require 'port-restclient)
 (require 'port-language-server)
 (require 'port-flycheck)
-;; (require 'port-snippets)
+(require 'port-snippets)
 (require 'port-other)
 (require 'port-shell)
 ;; (require 'port-cplusplus)
@@ -360,6 +358,7 @@
 ;; (require 'port-writer)
 ;; (require 'port-spell-check)
 ;; (require 'port-email)
+(require 'port-extras)
 (require 'port-recorded-macros)
 ;; (require 'port-unused)
 

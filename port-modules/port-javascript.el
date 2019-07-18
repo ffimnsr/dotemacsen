@@ -9,11 +9,6 @@
   :after js
   :mode "\\.js\\'"
   :interpreter "node"
-  :bind
-  (:map js-mode-map
-        ("," . self-with-space)
-        ("=" . pad-equals)
-        (":" . self-with-space))
   :custom
   (js2-concat-multiline-strings 'eol)
   (js2-mode-assume-strict t)

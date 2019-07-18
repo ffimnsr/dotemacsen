@@ -28,6 +28,7 @@
   :config
   (counsel-projectile-mode)
   :bind
-  ("M-t" . counsel-projectile-find-file))
+  ("M-t" . counsel-projectile-find-file)
+  ("M-p" . counsel-projectile-switch-project))
 
 (provide 'port-workspace)

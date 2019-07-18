@@ -8,4 +8,6 @@
   :custom
   (diff-font-lock-prettify t))
 
+(use-package smerge-mode)
+
 (provide 'port-diff)

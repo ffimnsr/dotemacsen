@@ -25,6 +25,12 @@
 (use-package gitconfig-mode)
 (use-package gitignore-mode)
 
+(use-package mmm-mode
+  :custom
+  (mmm-submode-decoration-level 0))
+
+(use-package vue-mode)
+
 (use-package ruby-mode
   :mode "\\.rb\\'"
   :interpreter "ruby")

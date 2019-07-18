@@ -1,11 +1,11 @@
 ;; -*- lexical-binding: t; -*-
 
 ;; Code folding
-(use-package origami
-  :bind
-  ("<f8>" . origami-toggle-node)
-  :init
-  (global-origami-mode 1))
+;; (use-package origami
+;;   :bind
+;;   ("<f8>" . origami-toggle-node)
+;;   :init
+;;   (global-origami-mode 1))
 
 ;; Toggle between single quote and double quotes
 (use-package toggle-quotes
@@ -18,13 +18,13 @@
   ("C-," . embrace-commander))
 
 ;; Multiple cursors
-(use-package multiple-cursors
-  :bind ("C-S-c C-S-c" . mc/edit-lines))
+;; (use-package multiple-cursors
+;;   :bind ("C-S-c C-S-c" . mc/edit-lines))
 
 ;; Enable opening very large file
-(use-package vlf)
+;; (use-package vlf)
 
 ;; Enable fill 85 column
-(use-package fill-column-indicator)
+;; (use-package fill-column-indicator)
 
 (provide 'port-extras)

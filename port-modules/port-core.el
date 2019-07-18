@@ -107,6 +107,9 @@
   :init
   (bash-completion-setup))
 
+(use-package epa
+  :ensure-system-package gpg)
+
 (use-package editorconfig
   :diminish editorconfig-mode
   :config

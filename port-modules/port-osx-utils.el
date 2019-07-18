@@ -8,7 +8,10 @@
   (global-set-key "\M-`" 'other-frame))
 
 (use-package terminal-here
-  :if is-macos)
+  :if is-macos
+  :config
+  (setq terminal-here-terminal-command
+        (list "open" "-a" "iTerm" ".")))
 
 (use-package reveal-in-osx-finder
   :if is-macos)
