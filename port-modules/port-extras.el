@@ -22,7 +22,9 @@
 ;;   :bind ("C-S-c C-S-c" . mc/edit-lines))
 
 ;; Enable opening very large file
-;; (use-package vlf)
+;; (use-package vlf
+;;   :config
+;;   (require 'vlf-setup))
 
 ;; Enable fill 85 column
 ;; (use-package fill-column-indicator)

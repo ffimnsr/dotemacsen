@@ -12,7 +12,20 @@
   (ivy-virtual-abbreviate 'abbreviate)
   (ivy-format-function #'ivy-format-function-arrow)
   :init
-  (ivy-mode))
+  (ivy-mode)
+  :config
+  ;; Can not exit minibuffer - https://github.com/abo-abo/swiper/issues/1953
+  (defvar ivy-recursive-restore-in-progress nil)
+  (defun ivy-note-when-inside-recursive-restore (orig-fun &rest args)
+    (let ((ivy-recursive-restore-in-progress t))
+      (apply orig-fun args)))
+  (defun ivy-no-read-while-exiting-recursion (orig-fun &rest args)
+    (if ivy-recursive-restore-in-progress
+        (error "Cannot use `ivy-read' while restoring recursive state")
+      (apply orig-fun args)))
+  (advice-add 'ivy-recursive-restore :around
+              #'ivy-note-when-inside-recursive-restore)
+  (advice-add 'ivy-read :around #'ivy-no-read-while-exiting-recursion))
 
 (use-package ivy-hydra
   :after ivy)
@@ -52,40 +65,40 @@
   (when (memq window-system '(mac ns))
     (exec-path-from-shell-initialize)))
 
-(use-package direnv
-  :ensure-system-package direnv
-  :custom
-  (direnv-always-show-summary nil)
-  :init
-  (direnv-mode)
-  (add-to-list 'direnv-non-file-modes 'comint-mode)
-  (add-to-list 'direnv-non-file-modes 'shell-mode))
+;; (use-package direnv
+;;   :ensure-system-package direnv
+;;   :custom
+;;   (direnv-always-show-summary nil)
+;;   :init
+;;   (direnv-mode)
+;;   (add-to-list 'direnv-non-file-modes 'comint-mode)
+;;   (add-to-list 'direnv-non-file-modes 'shell-mode))
 
 (use-package expand-region
   :bind
   ("C-=" . er/expand-region)
   ("C-+" . er/contract-region))
 
-(use-package alert
-  :custom
-  (alert-default-style (if is-macos 'osx-notifier 'message))
-  :config
-  (defun alert-after-finish-in-background (buf str)
-    (unless (get-buffer-window buf 'visible)
-      (alert str :buffer buf))))
+;; (use-package alert
+;;   :custom
+;;   (alert-default-style (if is-macos 'osx-notifier 'message))
+;;   :config
+;;   (defun alert-after-finish-in-background (buf str)
+;;     (unless (get-buffer-window buf 'visible)
+;;       (alert str :buffer buf))))
 
 (use-package eldoc
   :diminish eldoc-mode
   :custom
   (eldoc-idle-delay 2))
 
-(use-package undo-tree
-  :diminish undo-tree-mode
-  :init
-  (global-undo-tree-mode)
-  :custom
-  (undo-tree-visualizer-timestamps t)
-  (undo-tree-visualizer-diff t))
+;; (use-package undo-tree
+;;   :diminish undo-tree-mode
+;;   :init
+;;   (global-undo-tree-mode)
+;;   :custom
+;;   (undo-tree-visualizer-timestamps t)
+;;   (undo-tree-visualizer-diff t))
 
 ;; Highlight paired parenthesis
 (use-package paren
@@ -103,23 +116,33 @@
   (electric-quote-string t)
   (electric-quote-context-sensitive t))
 
-(use-package bash-completion
-  :init
-  (bash-completion-setup))
+;; (use-package bash-completion
+;;   :init
+;;   (bash-completion-setup))
 
-(use-package epa
-  :ensure-system-package gpg)
+;; (use-package epa
+;;   :ensure-system-package gpg)
 
-(use-package editorconfig
-  :diminish editorconfig-mode
-  :config
-  (editorconfig-mode 1))
+;; (use-package editorconfig
+;;   :diminish editorconfig-mode
+;;   :config
+;;   (editorconfig-mode 1))
 
 ;; Display indent guides
 (use-package highlight-indent-guides
- :diminish highlight-indent-guides-mode)
+  :diminish highlight-indent-guides-mode)
 
 ;; Traverse file by charaters
-(use-package avy)
+(use-package avy
+  :custom
+  (avy-style 'de-bruijn)
+  :bind
+  ([remap goto-char] . avy-goto-char)
+  ([remap goto-line] . avy-goto-line)
+  :config
+  (avy-setup-default))
+
+;; Free keys
+(use-package free-keys)
 
 (provide 'port-core)

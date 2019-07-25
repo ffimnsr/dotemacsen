@@ -134,6 +134,39 @@
 (defun kill-other-buffers ()
   "Kill all other buffers."
   (interactive)
-  (mapc 'kill-buffer
-        (delq (current-buffer)
-              (remove-if-not 'buffer-file-name (buffer-list)))))
+  (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
+
+(defun close-and-kill-this-pane ()
+  "If there are multiple windows, then close this pane and kill the buffer in it also."
+  (interactive)
+  (kill-this-buffer)
+  (if (not (one-window-p))
+      (delete-window)))
+
+(defun close-and-kill-next-pane ()
+  "If there are multiple windows, then close the other pane and kill the buffer in it also."
+  (interactive)
+  (other-window 1)
+  (kill-this-buffer)
+  (if (not (one-window-p))
+      (delete-window)))
+
+(defun kill-all-dired-buffers ()
+  "Kill all dired buffers."
+  (interactive)
+  (save-excursion
+    (let ((count 0))
+      (dolist (buffer (buffer-list))
+        (set-buffer buffer)
+        (when (equal major-mode 'dired-mode)
+          (setq count (1+ count))
+          (kill-buffer buffer)))
+      (message "Killed %i dired buffer(s)." count))))
+
+(defun kill-dired-buffers ()
+  "Kill all dired buffers without switching to every buffer alive."
+  (interactive)
+  (mapc (lambda (buffer)
+          (when (eq 'dired-mode (buffer-local-value 'major-mode buffer))
+            (kill-buffer buffer)))
+        (buffer-list)))

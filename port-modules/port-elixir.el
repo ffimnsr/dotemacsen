@@ -12,9 +12,8 @@
   :hook
   (flycheck-mode . flycheck-credo-setup))
 
-;; TODO: Disabled due to LSP
-;; (use-package alchemist
-;;   :diminish alchemist-mode
-;;   :after elixir-mode)
+(use-package alchemist
+  :diminish alchemist-mode
+  :after elixir-mode)
 
 (provide 'port-elixir)

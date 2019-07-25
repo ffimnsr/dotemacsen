@@ -10,6 +10,8 @@
 
 ;;; Code:
 
+(setq gc-cons-threshold (* 100 1024 1024))
+
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -50,7 +52,6 @@
 ;; Load emacs core
 (use-feature emacs
   :custom
-  (gc-cons-threshold (* 42 1024 1024))
   (load-prefer-newer t)                      ; Load newer files
   (history-length 128)
   (history-delete-duplicates t)
@@ -62,7 +63,7 @@
   (disabled-command-function nil)            ; Enable all commands by default
   (delete-by-moving-to-trash t)
   (inhibit-startup-screen t)                 ; Disable startup screen with graphics
-  (inhibit-startup-echo-area-message "")     ; Disable startup echo messages
+  (inhibit-startup-echo-area-message nil)    ; Disable startup echo messages
   (initial-scratch-message nil)              ; Blank scratch buffer
   (initial-major-mode 'fundamental-mode)
   (visible-bell nil)                         ; Disable visual bell graphics
@@ -71,6 +72,8 @@
   (standard-indent 2)
   (enable-recursive-minibuffers t)
   (ad-redefinition-action 'accept)
+  :hook
+  (after-init . (lambda () (setq gc-cons-threshold (* 42 1024 1024))))
   :config
   (setq-default cursor-in-non-selected-windows nil  ; Remove cursor in inactive windows
                 cursor-type 'bar             ; Use block cursor on active window
@@ -81,10 +84,9 @@
                 fill-column 85
                 truncate-lines t)
 
-  ;; Disable yes-or-no
-  (fset 'yes-or-no-p 'y-or-n-p)
+  (fset 'yes-or-no-p 'y-or-n-p)              ; Disable yes-or-no
 
-  ;; Default to UTF-8g
+  ;; Default to UTF-8
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
   (set-terminal-coding-system 'utf-8)
@@ -110,11 +112,11 @@
   (unless (server-running-p)
     (server-start)))
 
-(use-package dash             ;; List manipulation
+(use-package dash             ; List manipulation
   :config (dash-enable-font-lock))
 
-(use-package s)               ;; String manipulation
-(use-package f)               ;; File manipulation
+(use-package s)               ; String manipulation
+(use-package f)               ; File manipulation
 (use-package async)
 (use-package mode-local)
 (use-package ffap)
@@ -127,8 +129,10 @@
     :custom
     (blink-cursor-blinks 0)
     (frame-title-format "Equivalent Exchange")
+    :hook
+    (focus-out . garbage-collect)
     :init
-    ;; (add-to-list 'initial-frame-alist '(fullscreen . maximized))
+    (add-to-list 'initial-frame-alist '(fullscreen . fullheight))
     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
     (blink-cursor-mode)
 
@@ -136,10 +140,7 @@
       (mapc (lambda (mode)
               (when (fboundp mode)
                 (apply mode '(-1))))
-            '(tool-bar-mode menu-bar-mode scroll-bar-mode)))
-    (defun garbage-collect-when-frame-is-unfocused ()
-      (unless (frame-focus-state)
-        (garbage-collect)))))
+            '(tool-bar-mode menu-bar-mode scroll-bar-mode)))))
 
 (use-feature files
   :custom
@@ -328,18 +329,18 @@
 (require 'port-ui)
 (require 'port-osx-utils)
 (require 'port-workspace)
-(require 'port-vcs)
+;; (require 'port-vcs)
 (require 'port-company)
-;; (require 'port-prescient)
+(require 'port-prescient)
 ;; (require 'port-diff)
 ;; (require 'port-bookmarks)
 (require 'port-search)
 (require 'port-restclient)
 (require 'port-language-server)
 (require 'port-flycheck)
-(require 'port-snippets)
+;; (require 'port-snippets)
 (require 'port-other)
-(require 'port-shell)
+;; (require 'port-shell)
 ;; (require 'port-cplusplus)
 ;; (require 'port-csharp)
 ;; (require 'port-golang)
@@ -348,7 +349,7 @@
 (require 'port-javascript)
 (require 'port-typescript)
 ;; (require 'port-solidity)
-;; (require 'port-elixir)
+(require 'port-elixir)
 ;; (require 'port-dart)
 ;; (require 'port-python)
 ;; (require 'port-ui-ligatures)

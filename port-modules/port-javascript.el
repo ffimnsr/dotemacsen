@@ -5,6 +5,8 @@
   (js-indent-level 2)
   (js-switch-indent-offset 2))
 
+(use-package prettier-js)
+
 (use-package js2-mode
   :after js
   :mode "\\.js\\'"
