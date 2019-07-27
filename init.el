@@ -93,8 +93,7 @@
   (set-keyboard-coding-system 'utf-8)
   (set-buffer-file-coding-system 'utf-8)
 
-  ;; Unset C-z that freezes emacs gui
-  (global-unset-key (kbd "C-z"))
+  (global-unset-key (kbd "C-z"))             ; Unset C-z that freezes emacs gui
 
   ;; Remove overwrite-mode key
   (global-unset-key (kbd "<insert>"))
@@ -112,11 +111,11 @@
   (unless (server-running-p)
     (server-start)))
 
-(use-package dash             ; List manipulation
+(use-package dash                             ; List manipulation
   :config (dash-enable-font-lock))
 
-(use-package s)               ; String manipulation
-(use-package f)               ; File manipulation
+(use-package s)                               ; String manipulation
+(use-package f)                               ; File manipulation
 (use-package async)
 (use-package mode-local)
 (use-package ffap)
@@ -154,20 +153,21 @@
   (kept-new-versions 10)
   (kept-old-versions 0)
   :config
-  ;; Revert buffers to reflect external file changes
-  (global-auto-revert-mode t)
+  (global-auto-revert-mode t)                 ; Revert buffers to reflect external file changes
   (defun find-file-maybe-make-directories ()
     (let ((dir (file-name-directory buffer-file-name)))
       (unless (file-exists-p dir)
         (make-directory dir t))))
   (push #'find-file-maybe-make-directories find-file-not-found-functions))
 
+;; Disable savehist-mode due to high-cpu usage
+;; https://github.com/syl20bnr/spacemacs/issues/9811
 (use-package savehist
   :custom
   (savehist-additional-variables
    '(search-ring regexp-search-ring comint-input-ring))
   :config
-  (savehist-mode))
+  (savehist-mode nil))
 
 (use-package saveplace
   :init (save-place-mode))
@@ -360,7 +360,7 @@
 ;; (require 'port-spell-check)
 ;; (require 'port-email)
 (require 'port-extras)
-(require 'port-recorded-macros)
+;; (require 'port-recorded-macros)
 ;; (require 'port-unused)
 
 (garbage-collect)

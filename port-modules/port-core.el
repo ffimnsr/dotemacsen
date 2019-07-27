@@ -23,8 +23,7 @@
     (if ivy-recursive-restore-in-progress
         (error "Cannot use `ivy-read' while restoring recursive state")
       (apply orig-fun args)))
-  (advice-add 'ivy-recursive-restore :around
-              #'ivy-note-when-inside-recursive-restore)
+  (advice-add 'ivy-recursive-restore :around #'ivy-note-when-inside-recursive-restore)
   (advice-add 'ivy-read :around #'ivy-no-read-while-exiting-recursion))
 
 (use-package ivy-hydra

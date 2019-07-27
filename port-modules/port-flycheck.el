@@ -21,9 +21,9 @@
       (when (and eslint (file-executable-p eslint))
         (setq-local flycheck-javascript-eslint-executable eslint)))))
 
-(use-package flycheck-pos-tip
-  :init
-  (with-eval-after-load 'flycheck
-    (flycheck-pos-tip-mode)))
+;; (use-package flycheck-pos-tip
+;;   :init
+;;   (with-eval-after-load 'flycheck
+;;     (flycheck-pos-tip-mode)))
 
 (provide 'port-flycheck)
