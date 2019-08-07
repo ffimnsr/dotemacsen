@@ -132,10 +132,19 @@
     (focus-out . garbage-collect)
     :init
     (add-to-list 'initial-frame-alist '(fullscreen . fullheight))
+    (add-to-list 'default-frame-alist '(ns-appearance . dark))
     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+    (add-to-list 'default-frame-alist '(top . 0))
+    (add-to-list 'default-frame-alist '(left . 0))
     (blink-cursor-mode)
 
     (when window-system
+      (set-frame-font "Fira Code")
+
+      ;; Emacs-mac
+      ;; https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-composition-mode-in-emacs-mac-port
+      (mac-auto-operator-composition-mode)
+
       (mapc (lambda (mode)
               (when (fboundp mode)
                 (apply mode '(-1))))
@@ -342,7 +351,7 @@
 (require 'port-other)
 ;; (require 'port-shell)
 ;; (require 'port-cplusplus)
-;; (require 'port-csharp)
+(require 'port-csharp)
 ;; (require 'port-golang)
 (require 'port-rust)
 (require 'port-web)

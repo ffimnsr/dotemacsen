@@ -91,13 +91,17 @@
   :custom
   (eldoc-idle-delay 2))
 
-;; (use-package undo-tree
-;;   :diminish undo-tree-mode
-;;   :init
-;;   (global-undo-tree-mode)
-;;   :custom
-;;   (undo-tree-visualizer-timestamps t)
-;;   (undo-tree-visualizer-diff t))
+(use-package undo-tree
+  :diminish undo-tree-mode
+  :init
+  (global-undo-tree-mode)
+  :bind
+  ("C-/" . undo-tree-undo)
+  ("C-S-/" . undo-tree-redo)
+  :custom
+  (undo-tree-visualizer-timestamps nil)
+  (undo-tree-visualizer-diff nil)
+  (undo-tree-auto-save-history nil))
 
 ;; Highlight paired parenthesis
 (use-package paren

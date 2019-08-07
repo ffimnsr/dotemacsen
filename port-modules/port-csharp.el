@@ -6,6 +6,8 @@
 (use-package omnisharp
   :after csharp-mode
   :hook (csharp-mode . configure-omnisharp)
+  :custom
+  (omnisharp-server-executable-path "~/.emacs.d/etc/omnisharp/omnisharp")
   :config
   (defun configure-omnisharp ()
     (omnisharp-mode)
