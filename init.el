@@ -136,6 +136,7 @@
     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
     (add-to-list 'default-frame-alist '(top . 0))
     (add-to-list 'default-frame-alist '(left . 0))
+    (add-to-list 'default-frame-alist '(font . "Fira Code"))
     (blink-cursor-mode)
 
     (when window-system
@@ -347,7 +348,7 @@
 (require 'port-restclient)
 (require 'port-language-server)
 (require 'port-flycheck)
-;; (require 'port-snippets)
+(require 'port-snippets)
 (require 'port-other)
 ;; (require 'port-shell)
 ;; (require 'port-cplusplus)
