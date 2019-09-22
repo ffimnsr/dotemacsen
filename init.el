@@ -132,19 +132,23 @@
     (focus-out . garbage-collect)
     :init
     (add-to-list 'initial-frame-alist '(fullscreen . fullheight))
-    (add-to-list 'default-frame-alist '(ns-appearance . dark))
-    (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+
+    (when is-macos
+      (add-to-list 'default-frame-alist '(ns-appearance . dark))
+      (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t)))
+
     (add-to-list 'default-frame-alist '(top . 0))
     (add-to-list 'default-frame-alist '(left . 0))
-    (add-to-list 'default-frame-alist '(font . "Fira Code"))
+    (add-to-list 'default-frame-alist '(font . "Fira Code-10"))
     (blink-cursor-mode)
 
     (when window-system
-      (set-frame-font "Fira Code")
+      (set-frame-font "Fira Code-10")
 
-      ;; Emacs-mac
-      ;; https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-composition-mode-in-emacs-mac-port
-      (mac-auto-operator-composition-mode)
+      (when is-macos
+        ;; Emacs-mac
+        ;; https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-composition-mode-in-emacs-mac-port
+        (mac-auto-operator-composition-mode))
 
       (mapc (lambda (mode)
               (when (fboundp mode)
@@ -337,39 +341,39 @@
 
 (require 'port-core)
 (require 'port-ui)
-(require 'port-osx-utils)
+(require 'port-ui-ligatures)
 (require 'port-workspace)
-;; (require 'port-vcs)
 (require 'port-company)
 (require 'port-prescient)
-;; (require 'port-diff)
-;; (require 'port-bookmarks)
-(require 'port-search)
-(require 'port-restclient)
 (require 'port-language-server)
 (require 'port-flycheck)
 (require 'port-snippets)
-(require 'port-other)
+(require 'port-elixir)
+;; (require 'port-extras)
+;; (require 'port-osx-utils)
+;; (require 'port-vcs)
+;; (require 'port-diff)
+;; (require 'port-bookmarks)
+;; (require 'port-search)
+;; (require 'port-restclient)
+;; (require 'port-other)
 ;; (require 'port-shell)
 ;; (require 'port-cplusplus)
-(require 'port-csharp)
+;; (require 'port-csharp)
 ;; (require 'port-golang)
-(require 'port-rust)
-(require 'port-web)
-(require 'port-javascript)
-(require 'port-typescript)
+;; (require 'port-rust)
+;; (require 'port-web)
+;; (require 'port-javascript)
+;; (require 'port-typescript)
 ;; (require 'port-solidity)
-(require 'port-elixir)
 ;; (require 'port-dart)
 ;; (require 'port-python)
-;; (require 'port-ui-ligatures)
 ;; (require 'port-image)
 ;; (require 'port-org)
 ;; (require 'port-postscript)
 ;; (require 'port-writer)
 ;; (require 'port-spell-check)
 ;; (require 'port-email)
-(require 'port-extras)
 ;; (require 'port-recorded-macros)
 ;; (require 'port-unused)
 

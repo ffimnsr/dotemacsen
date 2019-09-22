@@ -7,6 +7,7 @@
   (projectile-verbose nil)
   (projectile-indexing-method 'alien)
   (projectile-git-command "git ls-files -zco --exclude-from=.projectile --exclude-standard")
+  (projectile-git-submodule-command nil)
   (projectile-generic-command "fd -H --exclude .git --ignore-file .projectile -t f -c never -d 9 -0")
   (projectile-completion-system 'ivy)
   (projectile-require-project-root t)

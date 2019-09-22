@@ -1,55 +1,62 @@
 ;; -*- lexical-binding: t; -*-
 
-;; TODO: Disabled as Emacs NS is not friendly with ligatures
-;; (def install-fira-code-font
-;;   (let* ((font-name "FiraCode-Retina.ttf")
-;;          (font-url
-;;           (format "https://github.com/tonsky/FiraCode/blob/master/distr/ttf/%s?raw=true" font-name))
-;;          (font-dest
-;;           (cl-case window-system
-;;             (x  (concat (or (getenv "XDG_DATA_HOME")
-;;                             (concat (getenv "HOME") "/.local/share"))
-;;                         "/fonts/"))
-;;             (mac (concat (getenv "HOME") "/Library/Fonts/" ))
-;;             (ns (concat (getenv "HOME") "/Library/Fonts/" )))))
-;;     (unless (file-directory-p font-dest) (mkdir font-dest t))
-;;     (url-copy-file font-url (expand-file-name font-name font-dest) t)
-;;     (message "Fonts downloaded, updating font cache... <fc-cache -f -v> ")
-;;     (shell-command-to-string (format "fc-cache -f -v"))
-;;     (message "Successfully install `fira-code' font to `%s'!" font-dest)))
+(defun fira-code-mode--make-alist (list)
+  "Generate prettify-symbols alist from LIST."
+  (let ((idx -1))
+    (mapcar
+     (lambda (s)
+       (setq idx (1+ idx))
+       (let* ((code (+ #Xe100 idx))
+          (width (string-width s))
+          (prefix ())
+          (suffix '(?\s (Br . Br)))
+          (n 1))
+     (while (< n width)
+       (setq prefix (append prefix '(?\s (Br . Bl))))
+       (setq n (1+ n)))
+     (cons s (append prefix suffix (list (decode-char 'ucs code))))))
+     list)))
 
-;; (def setup-fira-code-font
-;;   (unless (member "Fira Code" (font-family-list))
-;;     (install-fira-code-font))
-;;   (add-to-list 'default-frame-alist `(font . ,(concat "Fira Code Retina-" (number-to-string default-font-size))))
-;;   (let ((alist '((33 . ".\\(?:\\(?:==\\|!!\\)\\|[!=]\\)")
-;;                  (35 . ".\\(?:###\\|##\\|[#(?[_{]\\)")
-;;                  (36 . ".\\(?:>\\)")
-;;                  (37 . ".\\(?:\\(?:%%\\)\\|%\\)")
-;;                  (38 . ".\\(?:\\(?:&&\\)\\|&\\)")
-;;                  (42 . ".\\(?:\\(?:\\*\\*/\\)\\|\\(?:\\*[*/]\\)\\|[*/>]\\)")
-;;                  (43 . ".\\(?:\\(?:\\+\\+\\)\\|[+>]\\)")
-;;                  (45 . ".\\(?:\\(?:-[>-]\\|<<\\|>>\\)\\|[<>}~-]\\)")
-;;                  (46 . ".\\(?:\\(?:\\.[.<]\\)\\|[.=-]\\)")
-;;                  (47 . ".\\(?:\\(?:\\*\\*\\|//\\|==\\)\\|[*/=>]\\)")
-;;                  (48 . ".\\(?:x[a-zA-Z]\\)")
-;;                  (58 . ".\\(?:::\\|[:=]\\)")
-;;                  (59 . ".\\(?:;;\\|;\\)")
-;;                  (60 . ".\\(?:\\(?:!--\\)\\|\\(?:~~\\|->\\|\\$>\\|\\*>\\|\\+>\\|--\\|<[<=-]\\|=[<=>]\\||>\\)\\|[*$+~/<=>|-]\\)")
-;;                  (61 . ".\\(?:\\(?:/=\\|:=\\|<<\\|=[=>]\\|>>\\)\\|[<=>~]\\)")
-;;                  (62 . ".\\(?:\\(?:=>\\|>[=>-]\\)\\|[=>-]\\)")
-;;                  (63 . ".\\(?:\\(\\?\\?\\)\\|[:=?]\\)")
-;;                  (91 . ".\\(?:]\\)")
-;;                  (92 . ".\\(?:\\(?:\\\\\\\\\\)\\|\\\\\\)")
-;;                  (94 . ".\\(?:=\\)")
-;;                  (119 . ".\\(?:ww\\)")
-;;                  (123 . ".\\(?:-\\)")
-;;                  (124 . ".\\(?:\\(?:|[=|]\\)\\|[=>|]\\)")
-;;                  (126 . ".\\(?:~>\\|~~\\|[>=@~-]\\)"))))
-;;     (dolist (char-regexp alist)
-;;       (set-char-table-range composition-function-table (car char-regexp)
-;;                             `([,(cdr char-regexp) 0 font-shape-gstring])))))
+(defconst fira-code-mode--ligatures
+  '("www" "**" "***" "**/" "*>" "*/" "\\\\" "\\\\\\"
+    "{-" "[]" "::" ":::" ":=" "!!" "!=" "!==" "-}"
+    "--" "---" "-->" "->" "->>" "-<" "-<<" "-~"
+    "#{" "#[" "##" "###" "####" "#(" "#?" "#_" "#_("
+    ".-" ".=" ".." "..<" "..." "?=" "??" ";;" "/*"
+    "/**" "/=" "/==" "/>" "//" "///" "&&" "||" "||="
+    "|=" "|>" "^=" "$>" "++" "+++" "+>" "=:=" "=="
+    "===" "==>" "=>" "=>>" "<=" "=<<" "=/=" ">-" ">="
+    ">=>" ">>" ">>-" ">>=" ">>>" "<*" "<*>" "<|" "<|>"
+    "<$" "<$>" "<!--" "<-" "<--" "<->" "<+" "<+>" "<="
+    "<==" "<=>" "<=<" "<>" "<<" "<<-" "<<=" "<<<" "<~"
+    "<~~" "</" "</>" "~@" "~-" "~=" "~>" "~~" "~~>" "%%"
+    "x" ":" "+" "+" "*"))
 
-;; (add-hook 'emacs-startup-hook #'setup-fira-code-font)
+(defvar fira-code-mode--old-prettify-alist)
+
+(defun fira-code-mode--enable ()
+  "Enable Fira Code ligatures in current buffer."
+  (setq-local fira-code-mode--old-prettify-alist prettify-symbols-alist)
+  (setq-local prettify-symbols-alist (append (fira-code-mode--make-alist fira-code-mode--ligatures) fira-code-mode--old-prettify-alist))
+  (prettify-symbols-mode t))
+
+(defun fira-code-mode--disable ()
+  "Disable Fira Code ligatures in current buffer."
+  (setq-local prettify-symbols-alist fira-code-mode--old-prettify-alist)
+  (prettify-symbols-mode -1))
+
+(define-minor-mode fira-code-mode
+  "Fira Code ligatures minor mode"
+  :lighter " Fira Code"
+  (setq-local prettify-symbols-unprettify-at-point 'right-edge)
+  (if fira-code-mode
+      (fira-code-mode--enable)
+    (fira-code-mode--disable)))
+
+(defun fira-code-mode--setup ()
+  "Setup Fira Code Symbols"
+  (set-fontset-font t '(#Xe100 . #Xe16f) "Fira Code Symbol"))
+
+(add-hook 'prog-mode-hook #'fira-code-mode)
 
 (provide 'port-ui-ligatures)
