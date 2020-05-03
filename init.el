@@ -46,7 +46,6 @@
 (load (concat user-emacs-directory "lib.el"))
 
 (defconst default-font-size 12)
-(defconst is-macos (eq system-type 'darwin))
 (defconst port-modules-dir (concat user-emacs-directory "port-modules"))
 
 ;; Load emacs core
@@ -56,9 +55,6 @@
   (history-length 128)
   (history-delete-duplicates t)
   (echo-keystrokes 1e-6)
-  (ns-use-native-fullscreen nil)
-  (ns-function-modifier 'control)
-  (ns-pop-up-frames nil)
   (create-lockfiles nil)
   (disabled-command-function nil)            ; Enable all commands by default
   (delete-by-moving-to-trash t)
@@ -121,7 +117,6 @@
 (use-package async)
 (use-package mode-local)
 (use-package ffap)
-(use-package hydra)
 (use-package restart-emacs)
 
 ;; Load emacs config for desktop
@@ -134,21 +129,11 @@
     (focus-out . garbage-collect)
     :init
     (add-to-list 'initial-frame-alist '(fullscreen . fullheight))
-
-    (when is-macos
-      (add-to-list 'default-frame-alist '(ns-appearance . dark))
-      (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t)))
-
     (add-to-list 'default-frame-alist '(font . "Fira Code Retina-10"))
     (blink-cursor-mode)
 
     (when window-system
       (set-frame-font "Fira Code Retina-10")
-
-      (when is-macos
-        ;; Emacs-mac
-        ;; https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-composition-mode-in-emacs-mac-port
-        (mac-auto-operator-composition-mode))
 
       (mapc (lambda (mode)
               (when (fboundp mode)
@@ -334,57 +319,18 @@
      ((ffap-file-at-point)
       (find-file (ffap-file-at-point)))
      (t (term-next-prompt 1)))))
-0
+
 ;; Load packages
 (mapc (apply-partially 'add-to-list 'load-path)
-      '("~/.emacs.d/port-modules/"))
+      '(port-modules-dir))
 
 (require 'port-core)
 (require 'port-ui)
 (require 'port-org)
 
-;; (require 'port-workspace)
-;; (require 'port-company)
-;; (require 'port-diff)
-;; (require 'port-prescient)
-;; (require 'port-language-server)
-;; (require 'port-flycheck)
-;; (require 'port-snippets)
-;; (require 'port-rust)
-;; (require 'port-elixir)
-;; (require 'port-extras)
-;; (require 'port-other)
-;; (require 'port-restclient)
-;; (require 'port-web)
-;; (require 'port-javascript)
-;; (require 'port-typescript)
-;; (require 'port-osx-utils)
-;; (require 'port-vcs)
-;; (require 'port-bookmarks)
-;; (require 'port-search)
-;; (require 'port-shell)
-;; (require 'port-cplusplus)
-;; (require 'port-csharp)
-;; (require 'port-golang)
-;; (require 'port-solidity)
-;; (require 'port-dart)
-;; (require 'port-python)
-;; (require 'port-image)
-;; (require 'port-postscript)
-;; (require 'port-writer)
-;; (require 'port-spell-check)
-;; (require 'port-email)
-;; (require 'port-recorded-macros)
-;; (require 'port-ui-ligatures)
-;; (require 'port-unused)
-
 (garbage-collect)
 
 (custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
  '(frame-title-format "Equivalent Exchange" t))
 (put 'erase-buffer 'disabled nil)
 
