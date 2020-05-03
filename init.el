@@ -70,7 +70,7 @@
   (ring-bell-function #'ignore)              ; Disable audio bell
   (kill-buffer-query-functions nil)
   (standard-indent 2)
-  (enable-recursive-minibuffers t)
+  (enable-recursive-minibuffers nil)
   (ad-redefinition-action 'accept)
   :hook
   (after-init . (lambda () (setq gc-cons-threshold (* 42 1024 1024))))
@@ -82,16 +82,18 @@
                 c-basic-offset 2
                 tab-width 2                  ; Set tab width as four spaces is a tab
                 fill-column 85
-                truncate-lines t)
+                truncate-lines t
+                buffer-file-coding-system 'utf-8-unix
+                default-buffer-file-coding-system 'utf-8-unix)
 
   (fset 'yes-or-no-p 'y-or-n-p)              ; Disable yes-or-no
 
   ;; Default to UTF-8
-  (prefer-coding-system 'utf-8)
-  (set-default-coding-systems 'utf-8)
+  (prefer-coding-system 'utf-8-unix)
+  (set-default-coding-systems 'utf-8-unix)
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
-  (set-buffer-file-coding-system 'utf-8)
+  (set-buffer-file-coding-system 'utf-8-unix)
 
   (global-unset-key (kbd "C-z"))             ; Unset C-z that freezes emacs gui
 
@@ -137,13 +139,11 @@
       (add-to-list 'default-frame-alist '(ns-appearance . dark))
       (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t)))
 
-    (add-to-list 'default-frame-alist '(top . 0))
-    (add-to-list 'default-frame-alist '(left . 0))
-    (add-to-list 'default-frame-alist '(font . "Fira Code-10"))
+    (add-to-list 'default-frame-alist '(font . "Fira Code Retina-10"))
     (blink-cursor-mode)
 
     (when window-system
-      (set-frame-font "Fira Code-10")
+      (set-frame-font "Fira Code Retina-10")
 
       (when is-macos
         ;; Emacs-mac
@@ -334,47 +334,48 @@
      ((ffap-file-at-point)
       (find-file (ffap-file-at-point)))
      (t (term-next-prompt 1)))))
-
+0
 ;; Load packages
 (mapc (apply-partially 'add-to-list 'load-path)
       '("~/.emacs.d/port-modules/"))
 
 (require 'port-core)
 (require 'port-ui)
-(require 'port-ui-ligatures)
-(require 'port-workspace)
-(require 'port-company)
-(require 'port-prescient)
-(require 'port-language-server)
-(require 'port-flycheck)
-(require 'port-snippets)
-(require 'port-elixir)
+(require 'port-org)
+
+;; (require 'port-workspace)
+;; (require 'port-company)
+;; (require 'port-diff)
+;; (require 'port-prescient)
+;; (require 'port-language-server)
+;; (require 'port-flycheck)
+;; (require 'port-snippets)
+;; (require 'port-rust)
+;; (require 'port-elixir)
 ;; (require 'port-extras)
+;; (require 'port-other)
+;; (require 'port-restclient)
+;; (require 'port-web)
+;; (require 'port-javascript)
+;; (require 'port-typescript)
 ;; (require 'port-osx-utils)
 ;; (require 'port-vcs)
-;; (require 'port-diff)
 ;; (require 'port-bookmarks)
 ;; (require 'port-search)
-;; (require 'port-restclient)
-;; (require 'port-other)
 ;; (require 'port-shell)
 ;; (require 'port-cplusplus)
 ;; (require 'port-csharp)
 ;; (require 'port-golang)
-;; (require 'port-rust)
-;; (require 'port-web)
-;; (require 'port-javascript)
-;; (require 'port-typescript)
 ;; (require 'port-solidity)
 ;; (require 'port-dart)
 ;; (require 'port-python)
 ;; (require 'port-image)
-;; (require 'port-org)
 ;; (require 'port-postscript)
 ;; (require 'port-writer)
 ;; (require 'port-spell-check)
 ;; (require 'port-email)
 ;; (require 'port-recorded-macros)
+;; (require 'port-ui-ligatures)
 ;; (require 'port-unused)
 
 (garbage-collect)

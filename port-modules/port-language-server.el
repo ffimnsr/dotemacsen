@@ -2,6 +2,8 @@
 
 (use-package lsp-mode
   :commands (lsp lsp-deferred)
+  :init
+  (add-to-list 'exec-path "~/.emacs.d/etc/elixir-ls")
   :custom
   (lsp-enable-snippet nil)
   (lsp-auto-configure t)
@@ -12,8 +14,8 @@
 (use-package lsp-ui
   :commands lsp-ui
   :config
-  (lsp-ui-imenu-enable nil)  
-  (lsp-ui-doc-enable nil)  
+  (lsp-ui-imenu-enable nil)
+  (lsp-ui-doc-enable nil)
   (lsp-ui-peek-enable nil))
 
 (use-package company-lsp

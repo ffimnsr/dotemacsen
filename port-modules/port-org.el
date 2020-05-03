@@ -57,9 +57,9 @@
   (add-hook 'org-shiftright-final-hook 'windmove-right)
   (advice-add 'org-switch-to-buffer-other-window :override #'switch-to-buffer-other-window))
 
-(use-package org-bullets
-  :after org
-  :hook
-  (org-mode . org-bullets-mode 1))
+;;(use-package org-bullets
+;;  :after org
+;;  :hook
+;;  (org-mode . org-bullets-mode 1))
 
 (provide 'port-org)

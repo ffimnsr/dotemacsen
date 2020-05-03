@@ -7,14 +7,14 @@
      (lambda (s)
        (setq idx (1+ idx))
        (let* ((code (+ #Xe100 idx))
-          (width (string-width s))
-          (prefix ())
-          (suffix '(?\s (Br . Br)))
-          (n 1))
-     (while (< n width)
-       (setq prefix (append prefix '(?\s (Br . Bl))))
-       (setq n (1+ n)))
-     (cons s (append prefix suffix (list (decode-char 'ucs code))))))
+              (width (string-width s))
+              (prefix ())
+              (suffix '(?\s (Br . Br)))
+              (n 1))
+         (while (< n width)
+           (setq prefix (append prefix '(?\s (Br . Bl))))
+           (setq n (1+ n)))
+         (cons s (append prefix suffix (list (decode-char 'ucs code))))))
      list)))
 
 (defconst fira-code-mode--ligatures
@@ -57,6 +57,5 @@
   "Setup Fira Code Symbols"
   (set-fontset-font t '(#Xe100 . #Xe16f) "Fira Code Symbol"))
 
-(add-hook 'prog-mode-hook #'fira-code-mode)
-
+;; (add-hook 'prog-mode-hook #'fira-code-mode)
 (provide 'port-ui-ligatures)

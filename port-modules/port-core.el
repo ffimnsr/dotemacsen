@@ -64,27 +64,10 @@
   (when (memq window-system '(mac ns))
     (exec-path-from-shell-initialize)))
 
-;; (use-package direnv
-;;   :ensure-system-package direnv
-;;   :custom
-;;   (direnv-always-show-summary nil)
-;;   :init
-;;   (direnv-mode)
-;;   (add-to-list 'direnv-non-file-modes 'comint-mode)
-;;   (add-to-list 'direnv-non-file-modes 'shell-mode))
-
 (use-package expand-region
   :bind
   ("C-=" . er/expand-region)
   ("C-+" . er/contract-region))
-
-;; (use-package alert
-;;   :custom
-;;   (alert-default-style (if is-macos 'osx-notifier 'message))
-;;   :config
-;;   (defun alert-after-finish-in-background (buf str)
-;;     (unless (get-buffer-window buf 'visible)
-;;       (alert str :buffer buf))))
 
 (use-package eldoc
   :diminish eldoc-mode
@@ -118,18 +101,6 @@
   :custom
   (electric-quote-string t)
   (electric-quote-context-sensitive t))
-
-;; (use-package bash-completion
-;;   :init
-;;   (bash-completion-setup))
-
-;; (use-package epa
-;;   :ensure-system-package gpg)
-
-;; (use-package editorconfig
-;;   :diminish editorconfig-mode
-;;   :config
-;;   (editorconfig-mode 1))
 
 ;; Display indent guides
 (use-package highlight-indent-guides
