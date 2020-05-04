@@ -45,9 +45,6 @@
 
 (load (concat user-emacs-directory "lib.el"))
 
-(defconst default-font-size 12)
-(defconst port-modules-dir (concat user-emacs-directory "port-modules"))
-
 ;; Load emacs core
 (use-feature emacs
   :custom
@@ -128,7 +125,11 @@
     :hook
     (focus-out . garbage-collect)
     :init
-    (add-to-list 'initial-frame-alist '(fullscreen . fullheight))
+
+    (add-to-list 'initial-frame-alist (cons 'height 48))
+    (add-to-list 'initial-frame-alist (cons 'width 130))
+    (add-to-list 'default-frame-alist (cons 'height 48))
+    (add-to-list 'default-frame-alist (cons 'width 130))
     (add-to-list 'default-frame-alist '(font . "Fira Code Retina-10"))
     (blink-cursor-mode)
 
@@ -322,11 +323,12 @@
 
 ;; Load packages
 (mapc (apply-partially 'add-to-list 'load-path)
-      '(port-modules-dir))
+      '("~/.emacs.d/port-modules"))
 
 (require 'port-core)
 (require 'port-ui)
 (require 'port-org)
+(require 'port-workspace)
 
 (garbage-collect)
 
