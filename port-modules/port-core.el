@@ -59,9 +59,9 @@
 
 (use-package exec-path-from-shell
   :custom
-  (exec-path-from-shell-check-startup-files nil)
+  (exec-path-from-shell-check-startup-file nil)
   :config
-  (when (memq window-system '(mac ns))
+  (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
 (use-package expand-region

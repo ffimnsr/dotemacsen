@@ -14,12 +14,15 @@
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
+       (expand-file-name
+        "straight/repos/straight.el/bootstrap.el"
+        (or (bound-and-true-p straight-base-dir)
+            user-emacs-directory)))
+      (bootstrap-version 7))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
         (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
          'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
@@ -133,22 +136,22 @@
     :hook
     (focus-out . garbage-collect)
     :init
-    (add-to-list 'initial-frame-alist '(fullscreen . fullheight))
+    (add-to-list 'initial-frame-alist '(fullscreen . maximized))
 
     (when is-macos
       (add-to-list 'default-frame-alist '(ns-appearance . dark))
       (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t)))
 
-    (add-to-list 'default-frame-alist '(font . "Fira Code Retina-10"))
+    (add-to-list 'default-frame-alist '(font . "FiraCode Nerd Font-10"))
     (blink-cursor-mode)
 
     (when window-system
-      (set-frame-font "Fira Code Retina-10")
+      (set-frame-font "FiraCode Nerd Font-10")
 
-      (when is-macos
+      ;; (when is-macos
         ;; Emacs-mac
         ;; https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-composition-mode-in-emacs-mac-port
-        (mac-auto-operator-composition-mode))
+        ;; (mac-auto-operator-composition-mode))
 
       (mapc (lambda (mode)
               (when (fboundp mode)
@@ -341,8 +344,7 @@
 
 (require 'port-core)
 (require 'port-ui)
-(require 'port-org)
-
+;; (require 'port-org)
 ;; (require 'port-workspace)
 ;; (require 'port-company)
 ;; (require 'port-diff)
