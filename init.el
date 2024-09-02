@@ -132,7 +132,6 @@
   (use-feature frame
     :custom
     (blink-cursor-blinks 0)
-    (frame-title-format "Equivalent Exchange")
     :hook
     (focus-out . garbage-collect)
     :init
@@ -382,12 +381,6 @@
 
 (garbage-collect)
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(frame-title-format "Equivalent Exchange" t))
 (put 'erase-buffer 'disabled nil)
 
 ;;; init.el ends here
