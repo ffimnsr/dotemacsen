@@ -4,13 +4,15 @@
 
 ;; -*- lexical-binding: t; -*-
 
-(unless (>= emacs-major-version 26)
-  (error "Emacs version 26 or higher is required, you're running %s"
+(unless (>= emacs-major-version 29)
+  (error "Emacs version 29 or higher is required, you're running %s"
          emacs-version))
 
 ;;; Code:
 
 (setq gc-cons-threshold (* 100 1024 1024))
+
+(setq straight-use-package-by-default t)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -28,77 +30,83 @@
       (eval-print-last-sexp)))
   (load bootstrap-file nil 'nomessage))
 
-(setq use-package-enable-imenu-support t)
-(straight-use-package 'use-package)
-(setq straight-use-package-by-default t)
+;; Load packages
+(mapc (apply-partially 'add-to-list 'load-path)
+      '("~/.emacs.d/modules/"))
 
-(use-package no-littering)
-(use-package use-package-chords)
-(use-package use-package-ensure-system-package)
-(use-package use-package-hydra)
-(use-package diminish)
+(use-package hydra)                           ; Make bindings that stick around.
+(use-package restart-emacs)                   ; Restart emacs from within emacs
 
-(define-prefix-command 'port-project-map)
-
-(use-package bind-key
-  :config
-  (bind-key "<insert>" #'port-project-map))
-
-(use-package key-chord)
+(require 'diminish-config)
+(require 'bind-key-config)
+(require 'key-chord-config)
+(require 'no-littering-config)
+(require 'use-package-ensure-config)
+(require 'use-package-ensure-system-package-config)
+(require 'use-package-chords-config)
+(require 'use-package-hydra-config)
 
 (load (concat user-emacs-directory "lib.el"))
 
 (defconst default-font-size 12)
 (defconst is-macos (eq system-type 'darwin))
-(defconst port-modules-dir (concat user-emacs-directory "port-modules"))
+(defconst modules-dir (concat user-emacs-directory "modules"))
 
 ;; Load emacs core
 (use-feature emacs
   :custom
   (load-prefer-newer t)                      ; Load newer files
-  (history-length 128)
-  (history-delete-duplicates t)
-  (echo-keystrokes 1e-6)
+  (history-length 128)                       ; Set history length
+  (history-delete-duplicates t)              ; Delete duplicate history
+  (echo-keystrokes 1e-6)                     ; Show keystrokes immediately
   (ns-use-native-fullscreen nil)
   (ns-function-modifier 'control)
   (ns-pop-up-frames nil)
-  (create-lockfiles nil)
+  (create-lockfiles nil)                     ; Disable lock files
   (disabled-command-function nil)            ; Enable all commands by default
-  (delete-by-moving-to-trash t)
+  (delete-by-moving-to-trash t)              ; Move deleted files to trash
   (inhibit-startup-screen t)                 ; Disable startup screen with graphics
   (inhibit-startup-echo-area-message nil)    ; Disable startup echo messages
   (initial-scratch-message nil)              ; Blank scratch buffer
-  (initial-major-mode 'fundamental-mode)
+  (initial-buffer-choice nil)                ; Blank initial buffer
+  (cursor-in-non-selected-windows nil)       ; Hide cursor in inactive windows
+  (initial-major-mode 'text-mode)            ; Text mode is the initial mode
+  (default-major-mode 'text-mode)            ; Text mode is the default mode
   (visible-bell nil)                         ; Disable visual bell graphics
   (ring-bell-function #'ignore)              ; Disable audio bell
-  (kill-buffer-query-functions nil)
-  (standard-indent 2)
-  (enable-recursive-minibuffers nil)
-  (ad-redefinition-action 'accept)
+  (frame-title-format nil)                   ; Disable frame title
+  (use-file-dialog nil)                      ; Disable file dialog
+  (use-dialog-box nil)                       ; Disable dialog box
+  (pop-up-windows nil)                       ; Disable pop-up windows
+  (font-lock-maximum-decoration nil)         ; Disable font-lock
+  (font-lock-maximum-size nil)               ; Disable font-lock limit
+  (auto-fill-mode nil)                       ; Disable auto-fill line break space points
+  (fill-column 80)                           ; Fill column at 80
+  (truncate-lines t)                         ; Truncate lines
+  (kill-buffer-query-functions nil)          ; Disable kill buffer query
+  (standard-indent 2)                        ; Set standard indent to 2 spaces
+  (enable-recursive-minibuffers nil)         ; Disable recursive minibuffers
+  (ad-redefinition-action 'accept)           ; Silence redefinition warnings
   :hook
   (after-init . (lambda () (setq gc-cons-threshold (* 42 1024 1024))))
   :config
-  (setq-default cursor-in-non-selected-windows nil  ; Remove cursor in inactive windows
-                cursor-type 'bar             ; Use block cursor on active window
+  (setq-default cursor-type 'bar             ; Use block cursor on active window
                 indent-tabs-mode nil         ; Use spaces instead of tabs
-                line-spacing 1
-                c-basic-offset 2
-                tab-width 2                  ; Set tab width as four spaces is a tab
-                fill-column 85
-                truncate-lines t
-                buffer-file-coding-system 'utf-8-unix
-                default-buffer-file-coding-system 'utf-8-unix)
+                line-spacing 1               ; Set line spacing
+                tab-width 2)                 ; Set tab width as four spaces is a tab
 
-  (fset 'yes-or-no-p 'y-or-n-p)              ; Disable yes-or-no
+  ;; Enable alternatives to yes-or-no
+  (fset 'yes-or-no-p 'y-or-n-p)
 
-  ;; Default to UTF-8
-  (prefer-coding-system 'utf-8-unix)
-  (set-default-coding-systems 'utf-8-unix)
-  (set-terminal-coding-system 'utf-8)
-  (set-keyboard-coding-system 'utf-8)
+  ;; Default all buffer to UTF-8
+  (prefer-coding-system          'utf-8-unix)
+  (set-default-coding-systems    'utf-8-unix)
+  (set-terminal-coding-system    'utf-8)
+  (set-keyboard-coding-system    'utf-8)
   (set-buffer-file-coding-system 'utf-8-unix)
 
-  (global-unset-key (kbd "C-z"))             ; Unset C-z that freezes emacs gui
+  ;; Disable C-z that freezes emacs gui
+  (global-unset-key (kbd "C-z"))
 
   ;; Remove overwrite-mode key
   (global-unset-key (kbd "<insert>"))
@@ -116,7 +124,7 @@
   (unless (server-running-p)
     (server-start)))
 
-(use-package dash                             ; List manipulation
+(use-package dash                             ; List manipulation library
   :config (dash-enable-font-lock))
 
 (use-package s)                               ; String manipulation
@@ -124,38 +132,35 @@
 (use-package async)
 (use-package mode-local)
 (use-package ffap)
-(use-package hydra)
-(use-package restart-emacs)
 
 ;; Load emacs config for desktop
-(when (display-graphic-p)
-  (use-feature frame
-    :custom
-    (blink-cursor-blinks 0)
-    :hook
-    (focus-out . garbage-collect)
-    :init
-    (add-to-list 'initial-frame-alist '(fullscreen . maximized))
+(use-feature frame
+  :if (display-graphic-p)
+  :custom
+  (blink-cursor-blinks 0)
+  :hook
+  (focus-out . garbage-collect)
+  :init
+  (add-to-list 'initial-frame-alist '(fullscreen . maximized))
 
+  (when is-macos
+    (add-to-list 'default-frame-alist '(ns-appearance . dark))
+    (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t)))
+
+  (add-to-list 'default-frame-alist '(font . "FiraCode Nerd Font-10"))
+  (blink-cursor-mode)
+
+  (when window-system
+    (set-frame-font "FiraCode Nerd Font-10")
     (when is-macos
-      (add-to-list 'default-frame-alist '(ns-appearance . dark))
-      (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t)))
-
-    (add-to-list 'default-frame-alist '(font . "FiraCode Nerd Font-10"))
-    (blink-cursor-mode)
-
-    (when window-system
-      (set-frame-font "FiraCode Nerd Font-10")
-
-      ;; (when is-macos
-        ;; Emacs-mac
-        ;; https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-composition-mode-in-emacs-mac-port
-        ;; (mac-auto-operator-composition-mode))
-
-      (mapc (lambda (mode)
-              (when (fboundp mode)
-                (apply mode '(-1))))
-            '(tool-bar-mode menu-bar-mode scroll-bar-mode)))))
+      ;; Emacs-mac
+      ;; https://github.com/tonsky/FiraCode/wiki/Emacs-instructions#using-composition-mode-in-emacs-mac-port
+      (prettify-symbols-mode))
+    ;; Disable toolbar, menubar, and scrollbar
+    (mapc (lambda (mode)
+            (when (fboundp mode)
+              (apply mode '(-1))))
+          '(tool-bar-mode menu-bar-mode scroll-bar-mode))))
 
 (use-feature files
   :custom
@@ -176,19 +181,7 @@
         (make-directory dir t))))
   (push #'find-file-maybe-make-directories find-file-not-found-functions))
 
-;; Disable savehist-mode due to high-cpu usage
-;; https://github.com/syl20bnr/spacemacs/issues/9811
-(use-package savehist
-  :custom
-  (savehist-additional-variables
-   '(search-ring regexp-search-ring comint-input-ring))
-  :config
-  (savehist-mode nil))
-
-(use-package saveplace
-  :init (save-place-mode))
-
-(use-package recentf
+(use-feature recentf
   :custom
   (recentf-auto-cleanup 200)
   (recentf-max-saved-items 200)
@@ -220,15 +213,18 @@
   (advice-add 'move-beginning-of-line :around #'move-beginning-of-line-or-indentation)
   (advice-add 'beginning-of-visual-line :around #'move-beginning-of-line-or-indentation))
 
-;; Easily move between panes
+;; [Built-in] Easily move between panes
 (use-feature windmove
   :config
   (windmove-default-keybindings 'meta))
 
-;; Make buffer names distinguishable
+;; [Built-in] Make buffer names distinguishable
 (use-feature uniquify
   :custom
-  (uniquify-buffer-name-style 'forward))
+  (uniquify-buffer-name-style 'reverse)
+  (uniquify-separator " • ")
+  (uniquify-after-kill-buffer-p t)
+  (uniquify-ignore-buffers-re "^\\*"))
 
 ;; Make dired useable
 (use-feature dired
@@ -246,7 +242,7 @@
   (fringe-mode '(1 . 1)))
 
 ;; Sub-word traversing
-(use-package subword
+(use-feature subword
   :diminish subword-mode
   :init (global-subword-mode))
 
@@ -254,8 +250,6 @@
 (use-package delsel
   :diminish delete-selection-mode
   :init (delete-selection-mode))
-
-(use-package scratch)
 
 (use-feature comint
   :bind
@@ -294,13 +288,13 @@
 
 (use-feature compile
   :custom
-  (compilation-always-kill t)
+  (compilation-always-kill t)                 ; Kill compilation process before starting another
   (compilation-read-commmand nil)             ; Disable confirmation of compile command
-  (compilation-ask-about-save nil)
+  (compilation-ask-about-save nil)            ; Disable save confirmation
   :init
   (add-hook 'compilation-finish-function #'alert-after-finish-in-background))
 
-(use-package ansi-color
+(use-feature ansi-color
   :hook
   (compilation-filter . colorize-compilation-buffer)
   :config
@@ -336,51 +330,13 @@
      ((ffap-file-at-point)
       (find-file (ffap-file-at-point)))
      (t (term-next-prompt 1)))))
-0
-;; Load packages
-(mapc (apply-partially 'add-to-list 'load-path)
-      '("~/.emacs.d/port-modules/"))
 
-(require 'port-core)
-(require 'port-ui)
-;; (require 'port-org)
-;; (require 'port-workspace)
-;; (require 'port-company)
-;; (require 'port-diff)
-;; (require 'port-prescient)
-;; (require 'port-language-server)
-;; (require 'port-flycheck)
-;; (require 'port-snippets)
-;; (require 'port-rust)
-;; (require 'port-elixir)
-;; (require 'port-extras)
-;; (require 'port-other)
-;; (require 'port-restclient)
-;; (require 'port-web)
-;; (require 'port-javascript)
-;; (require 'port-typescript)
-;; (require 'port-osx-utils)
-;; (require 'port-vcs)
-;; (require 'port-bookmarks)
-;; (require 'port-search)
-;; (require 'port-shell)
-;; (require 'port-cplusplus)
-;; (require 'port-csharp)
-;; (require 'port-golang)
-;; (require 'port-solidity)
-;; (require 'port-dart)
-;; (require 'port-python)
-;; (require 'port-image)
-;; (require 'port-postscript)
-;; (require 'port-writer)
-;; (require 'port-spell-check)
-;; (require 'port-email)
-;; (require 'port-recorded-macros)
-;; (require 'port-ui-ligatures)
-;; (require 'port-unused)
+(require 'exec-path-from-shell-config)
+(require 'which-key-config)
+(require 'rainbow-delimiters-config)
+(require 'undo-tree-config)
 
 (garbage-collect)
-
 (put 'erase-buffer 'disabled nil)
 
 ;;; init.el ends here

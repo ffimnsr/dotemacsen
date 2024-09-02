@@ -10,4 +10,4 @@
   (bm-repository-file "~/.emacs.d/var/bm-repository")
   (bm-buffer-persistence nil))
 
-(provide 'port-bookmarks)
+(provide 'bm-config)

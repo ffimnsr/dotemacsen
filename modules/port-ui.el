@@ -17,10 +17,4 @@
     (set-face-attribute 'mode-line-inactive  nil :box        nil)
     (set-face-attribute 'mode-line-highlight nil :box        nil)))
 
-;; Colorful rainbow braces, brackets, parenthesis.
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode)
-  :custom
-  (rainbow-delimiters-max-face-count 6))
-
 (provide 'port-ui)
