@@ -3,3 +3,7 @@
 /var
 /etc
 /etc/omnisharp
+/elpa
+/tree-sitter
+
+.DS_Store
