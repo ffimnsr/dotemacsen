@@ -10,7 +10,7 @@
 
 ;;; Code:
 
-(setq gc-cons-threshold (* 100 1024 1024))
+(setq gc-cons-threshold (* 800 1024 1024))
 (setq straight-use-package-by-default t)
 
 (defvar bootstrap-version)
@@ -41,6 +41,11 @@
 (mapc (apply-partially 'add-to-list 'load-path)
       '(modules-dir))
 
+(use-package gcmh                                ; Garbage collector magic hack
+  :diminish gcmh-mode
+  :custom
+  (gcmh-high-cons-threshold (* 800 1024 1024))
+  :hook (after-init . gcmh-mode))
 (use-package hydra)                              ; Make bindings that stick around
 (use-package restart-emacs)                      ; Restart emacs from within emacs
 (use-package bind-key)                           ; Bind keys easily
@@ -94,8 +99,11 @@
   (standard-indent 2)                        ; Set standard indent to 2 spaces
   (enable-recursive-minibuffers nil)         ; Disable recursive minibuffers
   (ad-redefinition-action 'accept)           ; Silence redefinition warnings
+  (read-process-output-max (* 8 1024 1024))  ; Increase process output
+  (process-adaptive-read-buffering nil)      ; Disable adaptive read buffering
+  (use-short-answers t)                      ; Use short answers
   :hook
-  (after-init . (lambda () (setq gc-cons-threshold (* 42 1024 1024))))
+  (after-init . (lambda () (setq gc-cons-threshold (* 800 1024 1024))))
   :config
   (setq-default cursor-type 'bar             ; Use block cursor on active window
                 indent-tabs-mode nil         ; Use spaces instead of tabs
@@ -133,8 +141,14 @@
   ;; Quickly switch to previous buffer
   (global-set-key (kbd "C-6") 'mode-line-other-buffer)
 
-  ;; Enable narrow-to-region command
+  ;; Don't disable narrowing commands
   (put 'narrow-to-region 'disabled nil)
+  (put 'narrow-to-page 'disabled nil)
+  (put 'narrow-to-defun 'disabled nil)
+
+  ;; Don't disable case-change functions
+  (put 'upcase-region 'disabled nil)
+  (put 'downcase-region 'disabled nil)
 
   ;; Enable erase-buffer command
   (put 'erase-buffer 'disabled nil)
@@ -156,9 +170,9 @@
   :if (display-graphic-p)
   :custom
   (blink-cursor-blinks 0)
-  :hook
-  (focus-out . garbage-collect)
-  :init
+  :config
+  (setq-default window-resize-pixelwise t    ; Resize windows pixelwise
+                frame-resize-pixelwise t)    ; Resize frames pixelwise
   ;; Set initial frame size to maximized
   (add-to-list 'initial-frame-alist '(fullscreen . maximized))
   ;; Change frame appearance in macOS
@@ -192,6 +206,8 @@
   (large-file-warning-threshold 50000000)    ; Disable large file warning
   (kept-new-versions 10)                     ; Keep 10 new versions
   (kept-old-versions 0)                      ; Keep 0 old versions
+  (global-auto-revert-non-file-buffers t)    ; Auto revert non-file buffers
+  (auto-revert-verbose nil)                  ; Disable auto revert verbose
   :config
   ;; Revert buffers to reflect external file changes
   (global-auto-revert-mode t)
@@ -220,8 +236,10 @@
   (set-mark-command-repeat-pop t)            ; Repeat pop mark command
   (save-interprogram-paste-before-kill t)    ; Save clipboard contents before killing
   (async-shell-command-buffer 'new-buffer)   ; Run async shell command in new buffer
+  :hook
+  (after-init . transient-mark-mode)
   :config
-  (column-number-mode t)                       ; Show column number in mode line
+  (column-number-mode t)                     ; Show column number in mode line
   (defun kill-or-join-line (f &rest args)
     (if (not (eolp))
       (apply f args)
@@ -239,11 +257,71 @@
   (advice-add 'move-beginning-of-line :around #'move-beginning-of-line-or-indentation)
   (advice-add 'beginning-of-visual-line :around #'move-beginning-of-line-or-indentation))
 
+;; Scroll lock scrolling
+;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/scroll-lock.el
+(use-feature scroll-lock
+  :custom
+  (scroll-preserve-screen-position t))       ; Preserve screen position
+
 ;; Directional window-selection routines
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/windmove.el
 (use-feature windmove
   :config
   (windmove-default-keybindings 'meta))
+
+;; Restore old window configurations
+;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/winner.el
+(use-feature winner
+  :bind
+  ("C-c <down>" . ff/toggle-current-window-dedication)
+  ("<f7>"  . ff/split-window)
+  ("C-x 1" . ff/toggle-delete-other-windows)
+  ("C-x |" . ff/split-window-horizontally-instead)
+  ("C-x _" . ff/split-window-vertically-instead)
+  :hook
+  (after-init . winner-mode)
+  :config
+  (defun ff/toggle-delete-other-windows ()
+    "Delete other windows in frame if any, or restore previous window config."
+    (interactive)
+    (if (and winner-mode (equal (selected-window) (next-window)))
+        (winner-undo)
+      (delete-other-windows)))
+  (defun ff/split-window-horizontally-instead ()
+    "Kill any other windows and re-split such that the current window is on the top half of the frame."
+    (interactive)
+    (let ((other-buffer (and (next-window) (window-buffer (next-window)))))
+      (delete-other-windows)
+      (split-window-horizontally)
+      (when other-buffer
+        (set-window-buffer (next-window) other-buffer))))
+  (defun ff/split-window-vertically-instead ()
+    "Kill any other windows and re-split such that the current window is on the left half of the frame."
+    (interactive)
+    (let ((other-buffer (and (next-window) (window-buffer (next-window)))))
+      (delete-other-windows)
+      (split-window-vertically)
+      (when other-buffer
+        (set-window-buffer (next-window) other-buffer))))        
+  (defun ff/split-window()
+    "Split the window to see the most recent buffer in the other window.
+    Call a second time to restore the original window configuration."
+    (interactive)
+    (if (eq last-command 'ff/split-window)
+        (progn
+          (jump-to-register :ff/split-window)
+          (setq this-command 'ff/unsplit-window))
+      (window-configuration-to-register :ff/split-window)
+      (switch-to-buffer-other-window nil)))  
+  (defun ff/toggle-current-window-dedication ()
+    "Toggle whether the current window is dedicated to its current buffer."
+    (interactive)
+    (let* ((window (selected-window))
+          (was-dedicated (window-dedicated-p window)))
+      (set-window-dedicated-p window (not was-dedicated))
+      (message "Window %sdedicated to %s"
+              (if was-dedicated "no longer " "")
+              (buffer-name)))))
 
 ;; Unique buffer names dependent on file name
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/uniquify.el
@@ -276,13 +354,36 @@
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/progmodes/subword.el
 (use-feature subword
   :diminish subword-mode
-  :init (global-subword-mode))
+  :config (global-subword-mode))
 
 ;; Delete selection if you insert
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/delsel.el
 (use-feature delsel
   :diminish delete-selection-mode
-  :init (delete-selection-mode))
+  :config (delete-selection-mode))
+
+;; Say farewell to performance problems with minified code
+;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/so-long.el
+(use-feature so-long
+  :hook
+  (after-init . so-long-enable))
+
+;; Display line numbers in the left margin
+;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/display-line-numbers.el
+(use-feature display-line-numbers
+  :hook
+  (prog-mode . display-line-numbers-mode)
+  :config
+  (setq-default display-line-numbers-width 4))
+
+;; Display fill column indicator
+;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/display-fill-column-indicator.el
+(use-feature display-fill-column-indicator
+  :hook
+  (prog-mode . display-fill-column-indicator-mode)
+  :custom
+  (display-fill-column-indicator-character ?\u2502)
+  (display-fill-column-indicator-column 80))
 
 ;; General command interpreter in a window stuff
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/comint.el
@@ -297,9 +398,9 @@
   (setq-default comint-input-ignoredups t
                 comint-scroll-show-maximum-output nil
                 comint-output-filter-functions
-                '(ansi-color-process-output
-                  comint-truncate-buffer
-                  comint-watch-for-password-prompt))
+                  '(ansi-color-process-output
+                    comint-truncate-buffer
+                    comint-watch-for-password-prompt))
   (defun turn-on-comint-history (history-file)
     (setq comint-input-ring-file-name history-file)
     (comint-read-input-ring 'silent))
@@ -346,6 +447,8 @@
 ;; Window maker and Command loop
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/electric.el
 (use-feature electric
+  :hook
+  (after-init . electric-indent-mode)
   :custom
   (electric-quote-string t)
   (electric-quote-context-sensitive t))
@@ -353,7 +456,8 @@
 ;; Automatic parenthesis pairing
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/elec-pair.el
 (use-feature elec-pair
-  :init (electric-pair-mode))
+  :hook
+  (after-init . electric-pair-mode))
 
 ;; Highlight matching paren
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/paren.el
@@ -369,6 +473,20 @@
 (use-feature imenu
   :custom
   (imenu-auto-rescan t))
+
+;; Show function arglist or variable docstring in echo area
+;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/emacs-lisp/eldoc.el
+(use-feature eldoc
+  :diminish eldoc-mode
+  :hook
+  (after-init . global-eldoc-mode))
+
+;; A comprehensive visual interface to diff & patch
+;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/vc/ediff.el
+(use-package ediff
+  :custom
+  (ediff-split-window-function 'split-window-horizontally)
+  (ediff-window-setup-function 'ediff-setup-windows-plain))
 
 ;; Support for visiting image files
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/image-mode.el
@@ -584,15 +702,13 @@
 
 ;; Enable exec-path-from-shell
 ;; https://github.com/purcell/exec-path-from-shell
-;; (use-package exec-path-from-shell
-;;   :if (memq window-system '(mac ns x))
-;;   :ensure t
-;;   :custom
-;;   (exec-path-from-shell-check-startup-file nil)
-;;   :config 
-;;   (add-to-list 'exec-path-from-shell-variables "GOPATH")
-;;   (exec-path-from-shell-initialize))
-
-(garbage-collect)
+(use-package exec-path-from-shell
+  :if (memq window-system '(mac ns x))
+  :custom
+  (exec-path-from-shell-warn-duration-millis 1000)
+  :config
+  (dolist (var '("LANG" "LC_CTYPE"))
+    (add-to-list 'exec-path-from-shell-variables var))
+  (exec-path-from-shell-initialize))
 
 ;;; init.el ends here
