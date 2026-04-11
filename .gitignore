@@ -5,5 +5,8 @@
 /etc/omnisharp
 /elpa
 /tree-sitter
-
+/eln-cache
+.codex
 .DS_Store
+
+*.elc

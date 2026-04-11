@@ -1,17 +1,21 @@
-;;; init.el --- Initialization file for Emacs 25
+;;; init.el --- Initialization file for Emacs 30+ -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;;   ffimnsr <ffimnsr@gmail.com>
 
-;; -*- lexical-binding: t; -*-
-
-(unless (>= emacs-major-version 29)
-  (error "Emacs version 29 or higher is required, you're running %s"
+(unless (>= emacs-major-version 30)
+  (error "Emacs version 30 or higher is required, you're running %s"
          emacs-version))
 
 ;;; Code:
 
-(setq gc-cons-threshold (* 800 1024 1024))
+(setq gc-cons-threshold most-positive-fixnum
+      gc-cons-percentage 0.6)
+(defvar ff/file-name-handler-alist file-name-handler-alist)
+(setq file-name-handler-alist nil)
+
 (setq straight-use-package-by-default t)
+(setq straight-check-for-modifications '(check-on-save find-when-checking)
+      straight-cache-autoloads t)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -31,36 +35,30 @@
 
 (straight-use-package 'use-package)
 
-(load (concat user-emacs-directory "lib.el"))
+(load-file (expand-file-name "lib.el" user-emacs-directory))
 
-(defconst default-font-size 12)
-(defconst is-macos (eq system-type 'darwin))
 (defconst modules-dir (concat user-emacs-directory "modules"))
 
 ;; Load packages
-(mapc (apply-partially 'add-to-list 'load-path)
-      '(modules-dir))
+(add-to-list 'load-path modules-dir)
 
 (use-package gcmh                                ; Garbage collector magic hack
   :diminish gcmh-mode
   :custom
-  (gcmh-high-cons-threshold (* 800 1024 1024))
+  (gcmh-high-cons-threshold (* 256 1024 1024))
   :hook (after-init . gcmh-mode))
-(use-package hydra)                              ; Make bindings that stick around
-(use-package restart-emacs)                      ; Restart emacs from within emacs
-(use-package bind-key)                           ; Bind keys easily
-(use-package key-chord)                          ; Allow use of key chords
+(use-package hydra                              ; Make bindings that stick around
+  :defer t)
+(use-package restart-emacs                      ; Restart emacs from within emacs
+  :commands (restart-emacs))
 (use-package diminish)                           ; Diminish minor modes
 (use-package no-littering)                       ; Keep emacs.d clean
-(use-package use-package-ensure-system-package)  ; Ensure system binaries exist alongside your package declarations
-(use-package use-package-hydra)                  ; Add the :hydra keyword to the use-package macro
-(use-package use-package-chords)                 ; Define key-chord bindings for use-package declarations
 (use-package which-key                           ; Display available keybindings in popup
   :diminish which-key-mode
-  :custom
+  :defer 1
+  :config
   ;; Popup side window on bottom.
   (which-key-setup-side-window-bottom)
-  :config
   (which-key-mode))
 
 ;; Find file (or url) at point
@@ -90,38 +88,44 @@
   (use-file-dialog nil)                      ; Disable file dialog
   (use-dialog-box nil)                       ; Disable dialog box
   (pop-up-windows nil)                       ; Disable pop-up windows
-  (font-lock-maximum-decoration nil)         ; Disable font-lock
-  (font-lock-maximum-size nil)               ; Disable font-lock limit
+  (font-lock-maximum-decoration t)           ; Enable full font-lock decoration
+  (font-lock-maximum-size nil)               ; No font-lock size limit
   (auto-fill-mode nil)                       ; Disable auto-fill line break space points
   (fill-column 80)                           ; Fill column at 80
   (truncate-lines t)                         ; Truncate lines
   (kill-buffer-query-functions nil)          ; Disable kill buffer query
-  (standard-indent 2)                        ; Set standard indent to 2 spaces
   (enable-recursive-minibuffers nil)         ; Disable recursive minibuffers
   (ad-redefinition-action 'accept)           ; Silence redefinition warnings
   (read-process-output-max (* 8 1024 1024))  ; Increase process output
   (process-adaptive-read-buffering nil)      ; Disable adaptive read buffering
   (use-short-answers t)                      ; Use short answers
   :hook
-  (after-init . (lambda () (setq gc-cons-threshold (* 800 1024 1024))))
+  (after-init . (lambda ()
+                  (setq gc-cons-threshold (* 128 1024 1024)
+                        gc-cons-percentage 0.1
+                        file-name-handler-alist ff/file-name-handler-alist)))
   :config
   (setq-default cursor-type 'bar             ; Use block cursor on active window
                 indent-tabs-mode nil         ; Use spaces instead of tabs
                 line-spacing 1               ; Set line spacing
                 tab-width 2)                 ; Set tab width as four spaces is a tab
+  (setq-default standard-indent 2
+                c-basic-offset 2
+                js-indent-level 2
+                typescript-indent-level 2
+                rust-indent-offset 2
+                css-indent-offset 2
+                sh-basic-offset 2
+                yaml-indent-offset 2)
+  (add-hook 'prog-mode-hook
+            (lambda ()
+              (setq-local indent-tabs-mode nil)
+              (setq-local tab-width 2)))
 
-  ;; Enable alternatives to yes-or-no
-  (fset 'yes-or-no-p 'y-or-n-p)
-
-  (when is-macos
-    (setq ns-use-native-fullscreen nil)
-    (setq ns-function-modifier 'control)
-    (setq ns-pop-up-frames nil)
-    (setq mac-option-modifier 'super
-          mac-command-modifier 'meta
-          mac-function-modifer 'control)    
-    (add-to-list 'exec-path "/usr/local/bin")
-    (global-set-key "\M-`" 'other-frame))
+  ;; Disable built-in games and toy commands.
+  (dolist (game-cmd '(5x5 blackbox bubbles doctor dunnet gomoku hanoi life
+                          mpuz pong snake solitaire tetris zone))
+    (put game-cmd 'disabled t))
 
   ;; Default all buffer to UTF-8
   (prefer-coding-system          'utf-8-unix)
@@ -164,33 +168,6 @@
   (unless (server-running-p)
     (server-start)))
 
-;; Multi-frame management independent of window systems
-;; https://github.com/emacs-mirror/emacs/blob/master/lisp/frame.el
-(use-feature frame
-  :if (display-graphic-p)
-  :custom
-  (blink-cursor-blinks 0)
-  :config
-  (setq-default window-resize-pixelwise t    ; Resize windows pixelwise
-                frame-resize-pixelwise t)    ; Resize frames pixelwise
-  ;; Set initial frame size to maximized
-  (add-to-list 'initial-frame-alist '(fullscreen . maximized))
-  ;; Change frame appearance in macOS
-  (when is-macos
-    (add-to-list 'default-frame-alist '(ns-appearance . dark))
-    (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t)))
-  ;; Set default font
-  (add-to-list 'default-frame-alist '(font . "FiraCode Nerd Font-10"))
-  ;; Set cursor blink mode
-  (blink-cursor-mode t)
-  ;; Set font face
-  (set-frame-font "FiraCode Nerd Font-10")
-  ;; Disable toolbar, menubar, and scrollbar
-  (mapc (lambda (mode)
-    (when (fboundp mode)
-      (apply mode '(-1))))
-    '(tool-bar-mode menu-bar-mode scroll-bar-mode)))
-
 ;; File input and output commands for Emacs
 ;; https://github.com/emacs-mirror/emacs/blob/master/lisp/files.el
 (use-feature files
@@ -199,10 +176,6 @@
   (confirm-kill-emacs nil)                   ; Do not confirm before ending emacs session
   (confirm-kill-process nil)                 ; Do not confirm before killing process
   (confirm-nonexistent-file-or-buffer nil)   ; Disable annoying confirmation for not exist
-  (backup-directory-alist                    ; Backup files to temp directory
-    `((".*" . ,temporary-file-directory)))
-  (auto-save-file-name-transforms            ; Auto save files to temp directory
-    `((".*" ,temporary-file-directory t)))
   (large-file-warning-threshold 50000000)    ; Disable large file warning
   (kept-new-versions 10)                     ; Keep 10 new versions
   (kept-old-versions 0)                      ; Keep 0 old versions
@@ -223,15 +196,19 @@
 ;; https://github.com/emacs-mirror/emacs/blob/master/lisp/recentf.el
 (use-feature recentf
   :custom
-  (recentf-auto-cleanup 200)                 ; Auto cleanup after 200 files
+  (recentf-auto-cleanup 'never)              ; Cleanup on idle timer instead
   (recentf-max-saved-items 200)              ; Maximum 200 files
   :config
   (recentf-mode 1)
+  (run-with-idle-timer 30 t #'recentf-cleanup)
   (advice-add 'recentf-cleanup :around #'inhibit-message-in-minibuffer))
 
 ;; Basic editing commands for Emacs
 ;; https://github.com/emacs-mirror/emacs/blob/master/lisp/simple.el
 (use-feature simple
+  :bind
+  ("C-/" . undo-only)
+  ("C-S-/" . undo-redo)
   :custom
   (set-mark-command-repeat-pop t)            ; Repeat pop mark command
   (save-interprogram-paste-before-kill t)    ; Save clipboard contents before killing
@@ -290,7 +267,9 @@
   (defun ff/split-window-horizontally-instead ()
     "Kill any other windows and re-split such that the current window is on the top half of the frame."
     (interactive)
-    (let ((other-buffer (and (next-window) (window-buffer (next-window)))))
+    (let* ((next-win (next-window))
+           (other-buffer (unless (eq next-win (selected-window))
+                           (window-buffer next-win))))
       (delete-other-windows)
       (split-window-horizontally)
       (when other-buffer
@@ -298,11 +277,13 @@
   (defun ff/split-window-vertically-instead ()
     "Kill any other windows and re-split such that the current window is on the left half of the frame."
     (interactive)
-    (let ((other-buffer (and (next-window) (window-buffer (next-window)))))
+    (let* ((next-win (next-window))
+           (other-buffer (unless (eq next-win (selected-window))
+                           (window-buffer next-win))))
       (delete-other-windows)
       (split-window-vertically)
       (when other-buffer
-        (set-window-buffer (next-window) other-buffer))))        
+        (set-window-buffer (next-window) other-buffer))))
   (defun ff/split-window()
     "Split the window to see the most recent buffer in the other window.
     Call a second time to restore the original window configuration."
@@ -312,7 +293,7 @@
           (jump-to-register :ff/split-window)
           (setq this-command 'ff/unsplit-window))
       (window-configuration-to-register :ff/split-window)
-      (switch-to-buffer-other-window nil)))  
+      (switch-to-buffer-other-window nil)))
   (defun ff/toggle-current-window-dedication ()
     "Toggle whether the current window is dedicated to its current buffer."
     (interactive)
@@ -343,18 +324,11 @@
   (dired-use-ls-dired nil)                   ; Use ls for dired
   (dired-auto-revert-buffer t))              ; Auto revert dired buffer
 
-;; Fringe setup and control
-;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/fringe.el
-(use-feature fringe
-  :config
-  ;; Set side padding size
-  (fringe-mode '(1 . 1)))
-
 ;; Sub-word traversing
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/progmodes/subword.el
 (use-feature subword
   :diminish subword-mode
-  :config (global-subword-mode))
+  :hook (prog-mode . subword-mode))
 
 ;; Delete selection if you insert
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/delsel.el
@@ -366,7 +340,7 @@
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/so-long.el
 (use-feature so-long
   :hook
-  (after-init . so-long-enable))
+  (after-init . global-so-long-mode))
 
 ;; Display line numbers in the left margin
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/display-line-numbers.el
@@ -404,14 +378,15 @@
   (defun turn-on-comint-history (history-file)
     (setq comint-input-ring-file-name history-file)
     (comint-read-input-ring 'silent))
-  (def comint-return-dwim
+  (defun comint-return-dwim ()
     (cond
       ((comint-after-pmark-p) (comint-send-input))
       ((ffap-url-at-point) (browse-url (ffap-url-at-point)))
       ((ffap-file-at-point) (find-file (ffap-file-at-point)))
       (t (comint-next-prompt 1))))
   (defun write-input-ring-for-shell-modes ()
-    (when (-any? #'derived-mode-p '(comint-mode term-mode))
+    (when (or (derived-mode-p 'comint-mode)
+              (derived-mode-p 'term-mode))
       (comint-write-input-ring)))
   (defun write-input-ring-for-all-shell-modes ()
     (dolist (buffer (buffer-list))
@@ -424,7 +399,7 @@
 (use-feature compile
   :custom
   (compilation-always-kill t)                 ; Kill compilation process before starting another
-  (compilation-read-commmand nil)             ; Disable confirmation of compile command
+  (compilation-read-command nil)              ; Disable confirmation of compile command
   (compilation-ask-about-save nil)            ; Disable save confirmation
   :hook (compilation-finish-functions . #'alert-after-finish-in-background))
 
@@ -432,12 +407,12 @@
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/term.el
 (use-feature term
   :bind
-  (:map term-raw-mapp
+  (:map term-raw-map
         ([remap term-send-input] . term-return-dwim))
   :custom
   (term-input-ring-file-name (getenv "HISTFILE"))
   :config
-  (def term-return-dwim
+  (defun term-return-dwim ()
     (cond
       ((term-after-pmark-p) (term-send-input))
       ((ffap-url-at-point) (browse-url (ffap-url-at-point)))
@@ -468,6 +443,12 @@
   :config
   (show-paren-mode))
 
+;; Highlight current line globally for better terminal readability.
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/hl-line.el
+(use-feature hl-line
+  :hook
+  (after-init . global-hl-line-mode))
+
 ;; Framework for mode-specific buffer indexes
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/imenu.el
 (use-feature imenu
@@ -483,51 +464,27 @@
 
 ;; A comprehensive visual interface to diff & patch
 ;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/vc/ediff.el
-(use-package ediff
+(use-feature ediff
   :custom
   (ediff-split-window-function 'split-window-horizontally)
   (ediff-window-setup-function 'ediff-setup-windows-plain))
 
-;; Support for visiting image files
-;; https://github.com/emacs-mirror/emacs/blob/emacs-29.4/lisp/image-mode.el
-(use-feature image-mode
-  :hook
-  (image-mode . show-image-dimensions-in-mode-line)
-  :custom
-  (image-animate-loop t)
+;; High-contrast terminal colors.
+;; https://www.gnu.org/software/emacs/manual/html_node/emacs/Themes.html
+(use-feature faces
   :config
-  (defun show-image-dimensions-in-mode-line ()
-    (let* ((image-dimensions (image-size (image-get-display-property) :pixels))
-           (width (car image-dimensions))
-           (height (cdr image-dimensions)))
-      (setq mode-line-buffer-identification
-            (format "%s %dx%d" (propertized-buffer-identification "%12b") width height)))))  
-
-;; Git Porcelain inside Emacs
-;; https://github.com/magit/magit
-(use-package magit
-  :straight (magit :type git :host github :repo "magit/magit" :branch "main")
-  :custom
-  (magit-log-section-commit-count 0)
-  (magit-branch-prefer-remote-upstream t)
-  (magit-log-auto-more t)
-  (magit-diff-refine-hunk 'all)
-  (magit-no-confirm t))
-
-;; Use gruvbox-theme
-;; https://github.com/Greduan/emacs-theme-gruvbox
-(use-package gruvbox-theme
-  :config
-  (if (daemonp)
-    (add-hook 'after-make-frame-functions
-      (lambda (frame)
-        (select-frame frame)
-        (load-theme 'gruvbox t)))
-    (load-theme 'gruvbox t)))     
+  (unless (display-graphic-p)
+    (load-theme 'modus-vivendi t)
+    (setq frame-background-mode 'dark)
+    (set-face-attribute 'default nil :foreground "white" :background "black")
+    (set-face-attribute 'mode-line nil :foreground "black" :background "white" :box nil)
+    (set-face-attribute 'mode-line-inactive nil :foreground "white" :background "brightblack" :box nil)
+    (set-face-attribute 'minibuffer-prompt nil :foreground "cyan" :weight 'bold)))
 
 ;; Useful for traversing files by characters
 ;; https://github.com/abo-abo/avy
 (use-package avy
+  :commands (avy-goto-char-2 avy-goto-line)
   :custom
   (avy-style 'de-bruijn)
   :bind
@@ -535,29 +492,6 @@
   ([remap goto-line] . avy-goto-line)
   :config
   (avy-setup-default))
-
-;; Visualize the whole undo history in buffer as a tree, and you can access anywhere in it.
-;; https://github.com/emacsmirror/undo-tree
-(use-package undo-tree
-  :diminish undo-tree-mode
-  :hook (after-init . global-undo-tree-mode)
-  :bind
-  ("C-/" . undo-tree-undo)
-  ("C-S-/" . undo-tree-redo)
-  :custom
-  ;; Show relative times in the undo tree visualizer.
-  (undo-tree-visualizer-timestamps nil)
-  ;; Show diffs when browsing through the undo tree.
-  (undo-tree-visualizer-diff nil)
-  ;; Save history to a file.
-  (undo-tree-auto-save-history nil))
-
-;; Emacs rainbow delimiters mode
-;; https://github.com/Fanael/rainbow-delimiters
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode)
-  :custom
-  (rainbow-delimiters-max-face-count 6))
 
 ;; Expand region increases the selected region by semantic units
 ;; https://github.com/magnars/expand-region.el
@@ -569,146 +503,109 @@
 ;; Highlight indentation guides
 ;; https://github.com/DarthFennec/highlight-indent-guides
 (use-package highlight-indent-guides
-  :hook (prog-mode . highlight-indent-guides-mode)
+  :commands (highlight-indent-guides-mode)
+  :bind ("C-c i" . highlight-indent-guides-mode)
   :custom
   (highlight-indent-guides-method 'character)
   :diminish highlight-indent-guides-mode)
 
-;; Use ripgrep in Emacs
-;; https://github.com/dajva/rg.el
-(use-package rg
-  :ensure-system-package rg)
-
-;; Generic completion mechanism for Emacs
-;; https://github.com/abo-abo/swiper
-(use-package ivy
-  :diminish ivy-mode
-  :custom
-  (ivy-extra-directories nil)
-  (ivy-re-builders-alist
-   '((swiper . ivy--regex-plus)
-     (counsel-rg . ivy--regex-plus)
-     (t . ivy--regex-fuzzy)))
-  (ivy-use-virtual-buffers t)
-  (ivy-virtual-abbreviate 'abbreviate)
-  (ivy-format-function #'ivy-format-function-arrow)
-  :hook (after-init . ivy-mode)
-  :config
-  ;; Can not exit minibuffer - https://github.com/abo-abo/swiper/issues/1953
-  (defvar ivy-recursive-restore-in-progress nil)
-  (defun ivy-note-when-inside-recursive-restore (orig-fun &rest args)
-    (let ((ivy-recursive-restore-in-progress t))
-      (apply orig-fun args)))
-  (defun ivy-no-read-while-exiting-recursion (orig-fun &rest args)
-    (if ivy-recursive-restore-in-progress
-        (error "Cannot use `ivy-read' while restoring recursive state")
-      (apply orig-fun args)))
-  (advice-add 'ivy-recursive-restore :around #'ivy-note-when-inside-recursive-restore)
-  (advice-add 'ivy-read :around #'ivy-no-read-while-exiting-recursion))
-
-;; Ivy hydra provides additional keybindings for ivy
-;; https://github.com/abo-abo/swiper
-(use-package ivy-hydra
-  :after ivy)
-
-;; Ivy avy provides avy commands to ivy minibuffer
-;; https://github.com/abo-abo/swiper
-(use-package ivy-avy
-  :after ivy)
-
-;; Use Ivy as the interface to select from xref candidates
-;; https://github.com/alexmurray/ivy-xref
-(use-package ivy-xref
-  :after ivy
-  :custom
-  (xref-show-definitions-function #'ivy-xref-show-defs)
-  (xref-show-xrefs-function #'ivy-xref-show-xrefs))
-
-;; Ensures that any Emacs command using completing-read-function uses ivy for completion
-;; https://github.com/abo-abo/swiper
-(use-package counsel
-  :after ivy
-  :bind
-  ([remap execute-extended-command] . counsel-M-x))
-
-;; Swiper is an alternative to isearch that uses Ivy to show an overview of all matches
-;; https://github.com/abo-abo/swiper
-(use-package swiper
-  :after ivy
-  :bind
-  ([remap isearch-forward] . swiper)
-  ([remap isearch-backward] . swiper))
-
-;; Provides navigation for imenu tags across all buffers
-;; https://github.com/vspinu/imenu-anywhere
-(use-package imenu-anywhere
-  :after ivy
-  :commands ivy-imenu-anywhere)
-
-;; On the fly syntax checking for GNU Emacs
-;; https://github.com/flycheck/flycheck
-(use-package flycheck
-  :diminish flycheck-mode
+;; Save minibuffer history between sessions.
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/savehist.el
+(use-feature savehist
   :hook
-  (after-init . global-flycheck-mode)
-  :config
-  (setq-default flycheck-temp-prefix ".flycheck"))
+  (after-init . savehist-mode))
 
-;; ;; Modular in-buffer completion framework for Emacs
-;; ;; https://github.com/company-mode/company-mode
-(use-package company
-  :diminish company-mode
-  :hook (after-init . global-company-mode)
+;; Built-in minibuffer completion UI.
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/icomplete.el
+(use-feature icomplete
+  :hook
+  (after-init . fido-vertical-mode))
+
+;; Built-in inline completion preview.
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/completion-preview.el
+(use-feature completion-preview
+  :hook
+  (prog-mode . completion-preview-mode))
+
+;; Built-in diagnostics backend.
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/progmodes/flymake.el
+(use-feature flymake
   :custom
-  (company-tooltip-align-annotations t)
-  (company-tooltip-flip-when-above t)
-  (company-require-match nil)
-  (company-minimum-prefix-length 2)
-  (company-show-numbers t)
-  (company-transformers '(company-sort-prefer-same-case-prefix))
-  (company-dabbrev-minimum-length 2)
-  (company-dabbrev-code-modes t)
-  (company-dabbrev-code-everywhere t)
-  (company-backends '(company-capf company-files (company-dabbrev-code company-etags) company-dabbrev))
-  :bind
-  ("C-:" . company-complete)
-  ([remap completion-at-point] . company-manual-begin)
-  ([remap complete-symbol] . company-manual-begin))
+  (flymake-no-changes-timeout 0.3))
 
-;; LSP mode for Emacs
-;; https://github.com/emacs-lsp/lsp-mode
-(use-package lsp-mode
-  :commands (lsp lsp-deferred)
+;; Built-in LSP client for Emacs.
+;; https://www.gnu.org/software/emacs/manual/html_mono/eglot.html
+(use-feature eglot
+  :hook
+  ((js-mode . eglot-ensure)
+   (js-ts-mode . eglot-ensure)
+   (typescript-mode . eglot-ensure)
+   (typescript-ts-mode . eglot-ensure)
+   (tsx-ts-mode . eglot-ensure)
+   (rust-mode . eglot-ensure)
+   (rust-ts-mode . eglot-ensure))
   :custom
-  (lsp-enable-snippet nil)
-  (lsp-auto-configure t)
-  (lsp-auto-guess-root t)
-  (lsp-prefer-flymake nil))
+  (eglot-autoshutdown t)
+  (eglot-sync-connect nil))
 
-;; LSP UI tools
-;; https://github.com/emacs-lsp/lsp-ui
-(use-package lsp-ui
-  :after lsp-mode
+;; JavaScript and JSON base modes.
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/progmodes/js.el
+(use-feature js
+  :mode
+  (("\\.m?js\\'" . js-mode)
+   ("\\.cjs\\'" . js-mode)
+   ("\\.json\\'" . js-json-mode)))
+
+;; TypeScript fallback mode.
+;; https://github.com/emacs-typescript/typescript.el
+(use-package typescript-mode
+  :mode ("\\.ts\\'" . typescript-mode)
+  :commands (typescript-mode)
+  :defer t)
+
+;; YAML fallback mode.
+;; https://github.com/yoshiki/yaml-mode
+(use-package yaml-mode
+  :mode ("\\.ya?ml\\'" . yaml-mode)
+  :commands (yaml-mode)
+  :defer t)
+
+;; TOML fallback mode (built-in).
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/progmodes/conf-mode.el
+(use-feature conf-mode
+  :mode ("\\.toml\\'" . conf-toml-mode))
+
+;; Rust major mode fallback when tree-sitter grammar is not installed.
+;; https://github.com/rust-lang/rust-mode
+(use-package rust-mode
+  :mode ("\\.rs\\'" . rust-mode)
+  :commands (rust-mode)
+  :defer t)
+
+;; Prefer built-in rust-ts-mode when tree-sitter grammar is available.
+;; https://github.com/emacs-mirror/emacs/blob/emacs-30.2/lisp/progmodes/rust-ts-mode.el
+(use-feature treesit
   :config
-  (lsp-ui-imenu-enable nil)
-  (lsp-ui-doc-enable nil)
-  (lsp-ui-peek-enable nil))
-
-;; LSP ivy integration
-;; https://github.com/emacs-lsp/lsp-ivy
-(use-package lsp-ivy
-  :after lsp-mode
-  :commands (lsp-ivy-workspace-symbol lsp-ivy-global-workspace-symbol))
-
-;; Enable exec-path-from-shell
-;; https://github.com/purcell/exec-path-from-shell
-(use-package exec-path-from-shell
-  :if (memq window-system '(mac ns x))
-  :custom
-  (exec-path-from-shell-warn-duration-millis 1000)
-  :config
-  (dolist (var '("LANG" "LC_CTYPE"))
-    (add-to-list 'exec-path-from-shell-variables var))
-  (exec-path-from-shell-initialize))
+  (when (and (fboundp 'js-ts-mode)
+             (treesit-ready-p 'javascript t))
+    (add-to-list 'major-mode-remap-alist '(js-mode . js-ts-mode)))
+  (when (and (fboundp 'json-ts-mode)
+             (treesit-ready-p 'json t))
+    (add-to-list 'major-mode-remap-alist '(js-json-mode . json-ts-mode)))
+  (when (and (fboundp 'typescript-ts-mode)
+             (treesit-ready-p 'typescript t))
+    (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode)))
+  (if (and (fboundp 'tsx-ts-mode)
+           (treesit-ready-p 'tsx t))
+      (add-to-list 'auto-mode-alist '("\\.tsx\\'" . tsx-ts-mode))
+    (add-to-list 'auto-mode-alist '("\\.tsx\\'" . typescript-mode)))
+  (when (treesit-ready-p 'rust t)
+    (add-to-list 'major-mode-remap-alist '(rust-mode . rust-ts-mode)))
+  (when (and (fboundp 'yaml-ts-mode)
+             (treesit-ready-p 'yaml t))
+    (add-to-list 'major-mode-remap-alist '(yaml-mode . yaml-ts-mode)))
+  (when (and (fboundp 'toml-ts-mode)
+             (treesit-ready-p 'toml t))
+    (add-to-list 'major-mode-remap-alist '(conf-toml-mode . toml-ts-mode))))
 
 ;;; init.el ends here
